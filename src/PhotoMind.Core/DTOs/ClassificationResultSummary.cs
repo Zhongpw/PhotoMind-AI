@@ -3,6 +3,7 @@ namespace PhotoMind.Core.DTOs;
 /// <summary>Read-only projection of a classification result joined with its image file name and category names, for the review UI.</summary>
 public sealed class ClassificationResultSummary
 {
+    public long ResultId { get; set; }
     public long ImageId { get; set; }
     public string FileName { get; set; } = string.Empty;
     public string OriginalPath { get; set; } = string.Empty;

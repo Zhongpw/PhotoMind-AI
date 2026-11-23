@@ -2,6 +2,21 @@
 
 本文件记录 PhotoMind AI 各开发阶段的变更。
 
+## [0.3.0] — Phase 3：分类体系与审核
+
+**新增功能**
+
+- 默认分类体系（`CategorySeed`：自然/生活/动物/建筑/美食/其他 6 个一级分类及子分类，首次运行自动种子）。
+- 分类管理页（`CategoryManagementViewModel`/`CategoryManagementView`）：树形展示、添加一级/子分类、重命名、删除（保护系统分类与有子分类的分类）。
+- 分类审核页（`ReviewViewModel`/`ReviewView`）：图片墙虚拟化列表、按一级/二级分类/置信度/待审核/关键词筛选、单张与批量修改分类、标记待审核/已审核/未分类、查看 AI 描述与分类理由、原始路径展示。
+- 仓储扩展（`ClassificationRepository`）：分类 CRUD、结果分页筛选查询（`ReviewFilter`）、结果更新/删除。
+
+**验证**
+
+- 全量离线编译通过（EXIT=0，仅良性 NU1603 版本解析警告）。
+- 应用启动验证通过（WPF 可运行、SQLite 可连接、分类种子正常）。
+- 分类/审核冒烟验证通过（20/20：种子 6 分类、筛选、修改分类落库、分类 CRUD）。
+
 ## [0.2.0] — Phase 2：DeepSeek API 接入
 
 **新增功能**

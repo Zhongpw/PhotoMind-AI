@@ -18,6 +18,9 @@ public interface IClassificationRepository
     Task<Category?> GetCategoryAsync(long id, CancellationToken ct = default);
     Task<Category?> GetCategoryByNameAsync(string name, CancellationToken ct = default);
     Task AddCategoryAsync(Category category, CancellationToken ct = default);
+    Task UpdateCategoryAsync(Category category, CancellationToken ct = default);
+    Task DeleteCategoryAsync(long id, CancellationToken ct = default);
+    Task<IReadOnlyList<Category>> GetChildCategoriesAsync(long parentId, CancellationToken ct = default);
 
     Task SaveResultAsync(ClassificationResult result, CancellationToken ct = default);
     Task SaveResultsAsync(IEnumerable<ClassificationResult> results, CancellationToken ct = default);
@@ -26,4 +29,12 @@ public interface IClassificationRepository
 
     /// <summary>Latest classification results joined with image file name and category names.</summary>
     Task<IReadOnlyList<ClassificationResultSummary>> GetRecentResultSummariesAsync(int take, CancellationToken ct = default);
+
+    /// <summary>Filtered, paginated classification results for the review page.</summary>
+    Task<IReadOnlyList<ClassificationResultSummary>> GetResultSummariesAsync(ReviewFilter filter, int skip, int take, CancellationToken ct = default);
+    Task<int> GetResultSummariesCountAsync(ReviewFilter filter, CancellationToken ct = default);
+
+    Task<ClassificationResult?> GetResultAsync(long id, CancellationToken ct = default);
+    Task UpdateResultAsync(ClassificationResult result, CancellationToken ct = default);
+    Task DeleteResultAsync(long id, CancellationToken ct = default);
 }

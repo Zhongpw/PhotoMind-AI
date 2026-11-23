@@ -83,6 +83,32 @@ public sealed class ClassificationRepository : IClassificationRepository
         await db.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
+    public async Task UpdateCategoryAsync(Category category, CancellationToken ct = default)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+        db.Categories.Update(category);
+        await db.SaveChangesAsync(ct).ConfigureAwait(false);
+    }
+
+    public async Task DeleteCategoryAsync(long id, CancellationToken ct = default)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+        var category = await db.Categories.FindAsync(new object[] { id }, ct).ConfigureAwait(false);
+        if (category is null) return;
+        db.Categories.Remove(category);
+        await db.SaveChangesAsync(ct).ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<Category>> GetChildCategoriesAsync(long parentId, CancellationToken ct = default)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+        return await db.Categories
+            .Where(c => c.ParentId == parentId)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Id)
+            .ToListAsync(ct).ConfigureAwait(false);
+    }
+
     public async Task SaveResultAsync(ClassificationResult result, CancellationToken ct = default)
     {
         await using var db = await _contextFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
@@ -116,25 +142,102 @@ public sealed class ClassificationRepository : IClassificationRepository
             .ToListAsync(ct).ConfigureAwait(false);
 
         var categories = await db.Categories.ToDictionaryAsync(c => c.Id, ct).ConfigureAwait(false);
+        return rows.Select(x => ToSummary(x.r, x.img, categories)).ToList();
+    }
 
-        return rows.Select(x =>
+    public async Task<IReadOnlyList<ClassificationResultSummary>> GetResultSummariesAsync(ReviewFilter filter, int skip, int take, CancellationToken ct = default)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+
+        var search = string.IsNullOrWhiteSpace(filter.Search) ? string.Empty : filter.Search.Trim();
+        var hasSearch = search.Length > 0;
+
+        var resultQuery = db.ClassificationResults.AsQueryable();
+        if (filter.CategoryId is { } categoryId)
+            resultQuery = resultQuery.Where(r => r.CategoryId == categoryId);
+        if (filter.SubCategoryId is { } subCategoryId)
+            resultQuery = resultQuery.Where(r => r.SubCategoryId == subCategoryId);
+        if (filter.MinConfidence is { } minConfidence)
+            resultQuery = resultQuery.Where(r => r.Confidence >= minConfidence);
+        if (filter.NeedsReviewOnly)
+            resultQuery = resultQuery.Where(r => r.NeedsReview);
+
+        var rows = await (from r in resultQuery
+                          join img in db.Images on r.ImageId equals img.Id
+                          where !hasSearch || img.FileName.Contains(search) || r.TagsJson.Contains(search)
+                          orderby r.Id descending
+                          select new { r, img })
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(ct).ConfigureAwait(false);
+
+        var categories = await db.Categories.ToDictionaryAsync(c => c.Id, ct).ConfigureAwait(false);
+        return rows.Select(x => ToSummary(x.r, x.img, categories)).ToList();
+    }
+
+    public async Task<int> GetResultSummariesCountAsync(ReviewFilter filter, CancellationToken ct = default)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+
+        var search = string.IsNullOrWhiteSpace(filter.Search) ? string.Empty : filter.Search.Trim();
+        var hasSearch = search.Length > 0;
+
+        var resultQuery = db.ClassificationResults.AsQueryable();
+        if (filter.CategoryId is { } categoryId)
+            resultQuery = resultQuery.Where(r => r.CategoryId == categoryId);
+        if (filter.SubCategoryId is { } subCategoryId)
+            resultQuery = resultQuery.Where(r => r.SubCategoryId == subCategoryId);
+        if (filter.MinConfidence is { } minConfidence)
+            resultQuery = resultQuery.Where(r => r.Confidence >= minConfidence);
+        if (filter.NeedsReviewOnly)
+            resultQuery = resultQuery.Where(r => r.NeedsReview);
+
+        return await (from r in resultQuery
+                      join img in db.Images on r.ImageId equals img.Id
+                      where !hasSearch || img.FileName.Contains(search) || r.TagsJson.Contains(search)
+                      select r.Id)
+            .CountAsync(ct).ConfigureAwait(false);
+    }
+
+    public async Task<ClassificationResult?> GetResultAsync(long id, CancellationToken ct = default)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+        return await db.ClassificationResults.FindAsync(new object[] { id }, ct).ConfigureAwait(false);
+    }
+
+    public async Task UpdateResultAsync(ClassificationResult result, CancellationToken ct = default)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+        result.UpdatedAt = DateTime.UtcNow;
+        db.ClassificationResults.Update(result);
+        await db.SaveChangesAsync(ct).ConfigureAwait(false);
+    }
+
+    public async Task DeleteResultAsync(long id, CancellationToken ct = default)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+        var result = await db.ClassificationResults.FindAsync(new object[] { id }, ct).ConfigureAwait(false);
+        if (result is null) return;
+        db.ClassificationResults.Remove(result);
+        await db.SaveChangesAsync(ct).ConfigureAwait(false);
+    }
+
+    private static ClassificationResultSummary ToSummary(ClassificationResult r, Image img, IReadOnlyDictionary<long, Category> categories)
+    {
+        return new ClassificationResultSummary
         {
-            var r = x.r;
-            var img = x.img;
-            return new ClassificationResultSummary
-            {
-                ImageId = r.ImageId,
-                FileName = img.FileName,
-                OriginalPath = img.OriginalPath,
-                ThumbnailPath = img.ThumbnailPath,
-                CategoryName = r.CategoryId is { } categoryId && categories.TryGetValue(categoryId, out var cat) ? cat.Name : null,
-                SubCategoryName = r.SubCategoryId is { } subId && categories.TryGetValue(subId, out var sub) ? sub.Name : null,
-                Confidence = r.Confidence,
-                NeedsReview = r.NeedsReview,
-                Description = r.Description,
-                Reason = r.Reason,
-                TagsJson = r.TagsJson,
-            };
-        }).ToList();
+            ResultId = r.Id,
+            ImageId = r.ImageId,
+            FileName = img.FileName,
+            OriginalPath = img.OriginalPath,
+            ThumbnailPath = img.ThumbnailPath,
+            CategoryName = r.CategoryId is { } categoryId && categories.TryGetValue(categoryId, out var cat) ? cat.Name : null,
+            SubCategoryName = r.SubCategoryId is { } subId && categories.TryGetValue(subId, out var sub) ? sub.Name : null,
+            Confidence = r.Confidence,
+            NeedsReview = r.NeedsReview,
+            Description = r.Description,
+            Reason = r.Reason,
+            TagsJson = r.TagsJson,
+        };
     }
 }

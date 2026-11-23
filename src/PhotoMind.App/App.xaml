@@ -27,6 +27,12 @@
             <DataTemplate DataType="{x:Type vm:ClassificationViewModel}">
                 <views:ClassificationView />
             </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ReviewViewModel}">
+                <views:ReviewView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:CategoryManagementViewModel}">
+                <views:CategoryManagementView />
+            </DataTemplate>
             <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
                 <views:SettingsView />
             </DataTemplate>

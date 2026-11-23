@@ -1,0 +1,134 @@
+<UserControl x:Class="PhotoMind.App.Views.ReviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="24,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- ============ Filters ============ -->
+        <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,16">
+            <StackPanel>
+                <TextBlock Text="分类审核" Style="{StaticResource PageTitle}" Margin="0,0,0,16" />
+
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="一级分类" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <ComboBox Width="130" ItemsSource="{Binding FilterTopLevel}" DisplayMemberPath="Display"
+                              SelectedItem="{Binding SelectedFilterCategory}" Margin="0,0,12,0" />
+                    <TextBlock Text="二级分类" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <ComboBox Width="170" ItemsSource="{Binding FilterSubCategories}" DisplayMemberPath="Display"
+                              SelectedItem="{Binding SelectedFilterSubCategory}" Margin="0,0,12,0" />
+                    <TextBlock Text="置信度" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <ComboBox Width="120" ItemsSource="{Binding ConfidenceOptions}" DisplayMemberPath="Display"
+                              SelectedItem="{Binding SelectedConfidence}" Margin="0,0,12,0" />
+                    <CheckBox Content="仅待审核" IsChecked="{Binding NeedsReviewOnly}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <TextBox Width="180" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <Button Content="🔍 搜索" Command="{Binding ApplyFilterCommand}" Margin="0,0,8,0" />
+                    <Button Content="清除筛选" Style="{StaticResource SecondaryButton}" Command="{Binding ClearFiltersCommand}" />
+                </StackPanel>
+
+                <TextBlock Text="{Binding StatusText}" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="0,12,0,0" />
+            </StackPanel>
+        </Border>
+
+        <!-- ============ List + detail ============ -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="340" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Virtualised result list -->
+            <ListBox Grid.Column="0" ItemsSource="{Binding Items}"
+                     SelectedItem="{Binding CurrentItem}"
+                     Background="Transparent" BorderThickness="0"
+                     VirtualizingPanel.IsVirtualizing="True"
+                     VirtualizingPanel.VirtualizationMode="Recycling"
+                     ScrollViewer.IsDeferredScrollingEnabled="True"
+                     ScrollViewer.CanContentScroll="True">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,8" Padding="10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="28" />
+                                    <ColumnDefinition Width="64" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" />
+
+                                <Border Grid.Column="1" Width="56" Height="56" Background="#EFEFEF" CornerRadius="4">
+                                    <Grid>
+                                        <TextBlock Text="🖼️" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.4" />
+                                        <Image Source="{Binding ThumbnailPath, Converter={StaticResource PathToImageSource}}" Stretch="Uniform" />
+                                    </Grid>
+                                </Border>
+
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="12,0,0,0">
+                                    <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding CategoryText}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" Margin="0,2,0,0" />
+                                    <TextBlock Text="{Binding TagsText}" Style="{StaticResource SecondaryText}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="12,0,0,0">
+                                    <TextBlock Text="{Binding ConfidenceText}" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                                    <Border Background="#FFF4CE" CornerRadius="4" Padding="6,2" Margin="0,4,0,0"
+                                            Visibility="{Binding NeedsReview, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="待审核" FontSize="10" Foreground="{StaticResource WarningBrush}" />
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- Detail + batch actions -->
+            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="16,0,0,0" Padding="16">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="图片详情" Style="{StaticResource SectionTitle}" />
+                        <TextBlock Text="{Binding CurrentItem.FileName}" FontWeight="SemiBold" Margin="0,8,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding CurrentItem.CategoryText}" Foreground="{StaticResource AccentBrush}" Margin="0,4,0,0" />
+                        <TextBlock Text="{Binding CurrentItem.ConfidenceText}" Style="{StaticResource SecondaryText}" Margin="0,2,0,0" />
+
+                        <TextBlock Text="AI 描述" Style="{StaticResource SectionTitle}" Margin="0,16,0,0" />
+                        <TextBlock Text="{Binding CurrentItem.Description}" TextWrapping="Wrap" Margin="0,6,0,0" />
+
+                        <TextBlock Text="分类理由" Style="{StaticResource SectionTitle}" Margin="0,16,0,0" />
+                        <TextBlock Text="{Binding CurrentItem.Reason}" TextWrapping="Wrap" Margin="0,6,0,0" />
+
+                        <TextBlock Text="标签" Style="{StaticResource SectionTitle}" Margin="0,16,0,0" />
+                        <TextBlock Text="{Binding CurrentItem.TagsText}" TextWrapping="Wrap" Margin="0,6,0,0" />
+
+                        <TextBlock Text="原始位置" Style="{StaticResource SectionTitle}" Margin="0,16,0,0" />
+                        <TextBlock Text="{Binding CurrentItem.OriginalPath}" TextWrapping="Wrap" Style="{StaticResource SecondaryText}" Margin="0,6,0,0" />
+
+                        <Separator Margin="0,16,0,0" />
+
+                        <TextBlock Text="修改分类" Style="{StaticResource SectionTitle}" Margin="0,8,0,0" />
+                        <ComboBox ItemsSource="{Binding BatchTopLevel}" DisplayMemberPath="Display"
+                                  SelectedItem="{Binding BatchCategory}" Margin="0,10,0,0" />
+                        <ComboBox ItemsSource="{Binding BatchSubCategories}" DisplayMemberPath="Display"
+                                  SelectedItem="{Binding BatchSubCategory}" Margin="0,8,0,0" />
+                        <Button Content="应用到勾选" Command="{Binding BatchAssignCommand}" Margin="0,12,0,0" />
+                        <Button Content="应用到当前" Style="{StaticResource SecondaryButton}" Command="{Binding AssignCurrentCommand}" Margin="0,8,0,0" />
+
+                        <Separator Margin="0,16,0,0" />
+
+                        <Button Content="标记待审核（勾选）" Command="{Binding MarkReviewCommand}" Margin="0,8,0,0" />
+                        <Button Content="标记已审核（勾选）" Style="{StaticResource SecondaryButton}" Command="{Binding MarkReviewedCommand}" Margin="0,8,0,0" />
+                        <Button Content="标记未分类（勾选）" Style="{StaticResource DangerButton}" Command="{Binding UnclassifyCommand}" Margin="0,8,0,0" />
+
+                        <TextBlock Style="{StaticResource SecondaryText}" Margin="0,14,0,0">
+                            <Run Text="已勾选 " /><Run Text="{Binding SelectedCount}" FontWeight="SemiBold" /><Run Text=" 张" />
+                        </TextBlock>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
