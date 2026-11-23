@@ -31,12 +31,19 @@ public sealed class AppPaths : IAppPaths
 
     public string ThumbnailDirectory => Path.Combine(_dataDirectory, AppConstants.ThumbnailCacheDirectoryName);
 
-    public string LogDirectory => Path.Combine(_dataDirectory, "logs");
+    public string LogDirectory => Path.Combine(_dataDirectory, AppConstants.LogsDirectoryName);
+
+    public string TempDirectory => Path.Combine(_dataDirectory, AppConstants.TempDirectoryName);
+
+    public string ConfigFilePath => Path.Combine(_dataDirectory, AppConstants.ConfigFileName);
+
+    public string SecretsFilePath => Path.Combine(_dataDirectory, AppConstants.SecretsFileName);
 
     public void EnsureCreated()
     {
         Directory.CreateDirectory(_dataDirectory);
         Directory.CreateDirectory(ThumbnailDirectory);
         Directory.CreateDirectory(LogDirectory);
+        Directory.CreateDirectory(TempDirectory);
     }
 }

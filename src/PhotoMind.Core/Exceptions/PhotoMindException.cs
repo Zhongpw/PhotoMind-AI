@@ -36,3 +36,9 @@ public sealed class PathValidationException : PhotoMindException
 {
     public PathValidationException(string message) : base(message) { }
 }
+
+/// <summary>Thrown when required configuration is missing or invalid (no API key, upload disabled).</summary>
+public sealed class PhotoMindConfigurationException : PhotoMindException
+{
+    public PhotoMindConfigurationException(string message) : base(message) { }
+}

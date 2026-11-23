@@ -15,6 +15,7 @@
             <converters:InverseBoolConverter x:Key="InverseBool" />
             <converters:NullToCollapsedConverter x:Key="NullToCollapsed" />
             <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+            <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibility" />
 
             <!-- ViewModel -> View data templates -->
             <DataTemplate DataType="{x:Type vm:HomeViewModel}">
@@ -22,6 +23,12 @@
             </DataTemplate>
             <DataTemplate DataType="{x:Type vm:ScanViewModel}">
                 <views:ScanView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ClassificationViewModel}">
+                <views:ClassificationView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+                <views:SettingsView />
             </DataTemplate>
             <DataTemplate DataType="{x:Type vm:PlaceholderViewModel}">
                 <views:PlaceholderView />

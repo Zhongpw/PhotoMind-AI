@@ -14,4 +14,13 @@ public static class AiConstants
 
     /// <summary>Default max retries per image.</summary>
     public const int DefaultMaxRetries = 3;
+
+    /// <summary>Default maximum edge of the AI preview image in pixels.</summary>
+    public const int DefaultMaxPreviewDimension = 1024;
+
+    /// <summary>Default JPEG quality (1..100) for the generated AI preview.</summary>
+    public const int DefaultPreviewQuality = 85;
+
+    /// <summary>Secret-store key under which the DeepSeek API key is persisted.</summary>
+    public const string ApiKeySecretName = "deepseek-api-key";
 }

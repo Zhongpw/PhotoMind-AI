@@ -1,10 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PhotoMind.Core.Interfaces;
+using PhotoMind.Infrastructure.AI;
 using PhotoMind.Infrastructure.Database;
 using PhotoMind.Infrastructure.FileSystem;
 using PhotoMind.Infrastructure.ImageProcessing;
+using PhotoMind.Infrastructure.Security;
 using PhotoMind.Infrastructure.Services;
+using Serilog;
 
 namespace PhotoMind.Infrastructure;
 
@@ -21,6 +24,16 @@ public static class DependencyInjection
         services.AddSingleton<DirectoryScanner>();
         services.AddSingleton<IScanRepository, ScanRepository>();
         services.AddSingleton<IScanService, ScanService>();
+
+        // AI / classification services.
+        services.AddSingleton<ILogger>(_ => Log.Logger);
+        services.AddSingleton<ISecretStore, SecretStore>();
+        services.AddSingleton<IAiConfigStore, AiConfigStore>();
+        services.AddSingleton<IImageNormalizer, ImageNormalizer>();
+        services.AddSingleton<IDeepSeekClient, DeepSeekClient>();
+        services.AddSingleton<AIRequestManager>();
+        services.AddSingleton<IClassificationRepository, ClassificationRepository>();
+        services.AddSingleton<IClassificationService, ClassificationService>();
 
         services.AddDbContextFactory<AppDbContext>((sp, options) =>
         {

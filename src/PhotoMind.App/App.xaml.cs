@@ -56,6 +56,8 @@ public partial class App : Application
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<HomeViewModel>();
         services.AddSingleton<ScanViewModel>();
+        services.AddSingleton<ClassificationViewModel>();
+        services.AddSingleton<SettingsViewModel>();
 
         services.AddSingleton<MainWindow>();
     }

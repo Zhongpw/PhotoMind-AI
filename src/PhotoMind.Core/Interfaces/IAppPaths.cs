@@ -7,7 +7,10 @@ public interface IAppPaths
     string DatabasePath { get; }
     string ThumbnailDirectory { get; }
     string LogDirectory { get; }
+    string TempDirectory { get; }
+    string ConfigFilePath { get; }
+    string SecretsFilePath { get; }
 
-    /// <summary>Creates the data, thumbnail and log directories if they do not yet exist.</summary>
+    /// <summary>Creates the data, thumbnail, log and temp directories if they do not yet exist.</summary>
     void EnsureCreated();
 }

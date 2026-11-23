@@ -18,16 +18,16 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private object? _currentViewModel;
 
-    public MainViewModel(HomeViewModel home, ScanViewModel scan)
+    public MainViewModel(HomeViewModel home, ScanViewModel scan, ClassificationViewModel classify, SettingsViewModel settings)
     {
         NavigationItems.Add(new NavigationItem("首页", "🏠", home));
         NavigationItems.Add(new NavigationItem("图片扫描", "🖼️", scan));
-        NavigationItems.Add(new NavigationItem("AI 智能分类", "🤖", new PlaceholderViewModel("AI 智能分类")));
+        NavigationItems.Add(new NavigationItem("AI 智能分类", "🤖", classify));
         NavigationItems.Add(new NavigationItem("分类审核", "✅", new PlaceholderViewModel("分类审核")));
         NavigationItems.Add(new NavigationItem("照片整理", "📁", new PlaceholderViewModel("照片整理")));
         NavigationItems.Add(new NavigationItem("分类管理", "🏷️", new PlaceholderViewModel("分类管理")));
         NavigationItems.Add(new NavigationItem("历史任务", "🕘", new PlaceholderViewModel("历史任务")));
-        NavigationItems.Add(new NavigationItem("设置", "⚙️", new PlaceholderViewModel("设置")));
+        NavigationItems.Add(new NavigationItem("设置", "⚙️", settings));
 
         WeakReferenceMessenger.Default.Register<NavigateMessage>(this, (_, message) => NavigateToKey(message.PageKey));
 

@@ -13,4 +13,11 @@ public static class AppConstants
     public const string LogFileName = "photomin-.log";
     public const string ThumbnailCacheDirectoryName = "thumbnails";
     public const string LogsDirectoryName = "logs";
+    public const string TempDirectoryName = "temp";
+
+    /// <summary>Non-secret AI settings file (stored in the data directory).</summary>
+    public const string ConfigFileName = "ai-config.json";
+
+    /// <summary>DPAPI-protected secret blob (API key).</summary>
+    public const string SecretsFileName = "secrets.dat";
 }
