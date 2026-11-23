@@ -4,30 +4,26 @@
 
 PhotoMind AI 是一款 Windows 桌面应用：它可以扫描电脑中的照片，使用 DeepSeek 视觉模型理解照片内容并给出分类建议，让你审核后决定是否整理（复制/移动/仅建目录）。**分类与整理完全分离**，扫描和分类阶段只读取原始照片，绝不修改、移动、重命名或删除原始文件。
 
-> 当前进度：**Phase 0 + Phase 1** 已完成（项目骨架、基础 UI、图片扫描、缩略图、网格虚拟化、扫描记录持久化）。DeepSeek API 接入（Phase 2）及后续阶段尚未开始。
+> 当前进度：**全部 6 个阶段已完成**（Phase 0 项目骨架 → Phase 1 图片扫描 → Phase 2 DeepSeek API 接入 → Phase 3 分类体系与审核 → Phase 4 照片整理 → Phase 5 任务恢复与优化 → Phase 6 最终发布）。
 
 ---
 
 ## 功能概览
 
-### 已完成（Phase 0 + Phase 1）
+### 核心功能（全部 6 阶段已完成）
 
-- 分层解决方案（`PhotoMind.Core` / `PhotoMind.Infrastructure` / `PhotoMind.App`）。
-- WPF 主界面：左侧导航栏 + 主工作区（首页 / 图片扫描 / 其余页面为占位）。
-- 首页：显示已扫描图片数、未分类数、最近扫描任务等统计。
-- 图片扫描：选择文件夹 / 磁盘 / 多目录、递归扫描、排除目录、格式筛选、进度显示、暂停/继续/取消。
-- 图片类型识别：通过文件内容魔数判断格式（不依赖扩展名），阶段一支持 JPG/JPEG/PNG/WebP/BMP/GIF（TIFF/HEIC/RAW 可识别但暂不进入 AI 支持列表）。
-- 缩略图：基于 ImageSharp 生成 256px JPEG 缩略图，按「路径+大小+修改时间」做缓存，绝不修改原图。
-- 图片网格：WPF `ListBox` 虚拟化，按需加载缩略图，不为上万张图片一次性创建高分辨率 BitmapSource。
-- 扫描记录持久化：SQLite（EF Core）保存扫描任务与图片元数据（文件名/路径/大小/尺寸/格式/SHA-256/EXIF 拍摄时间等）。
-- 结构化日志：Serilog 写入本地日志目录。
+- **图片扫描**：选择文件夹 / 磁盘 / 多目录、递归扫描、排除目录、格式筛选、暂停/继续/取消；文件内容魔数识别格式（不依赖扩展名）；256px 缩略图缓存；网格虚拟化。
+- **AI 智能分类**（DeepSeek 视觉）：三种模式（AI 自动 / 用户自定义 / 混合）、API Key DPAPI 加密存储、图片预处理（缩放压缩，不上传原图）、指数退避重试、用量统计、暂停/恢复/取消。
+- **分类审核**：按分类/置信度/待审核/关键词筛选，单张与批量修改分类。
+- **照片整理**：按分类建文件夹、仅建目录 / 复制（默认）/ 移动，安全校验（SHA-256、防覆盖、防路径穿越、磁盘空间检查）、同名自动改名、完整撤销。
+- **任务恢复与优化**：异常退出自动恢复中断任务、重复图片检测、API 用量统计、历史任务页、缩略图并发限制、10k 张性能验证。
+- **最终发布**：自包含 x64 发布、安装/卸载脚本、完整文档。
 
-### 规划中（Phase 2 及以后）
+### 技术要点
 
-- DeepSeek API 接入与图片识别（API Key 安全存储、重试、限流、用量统计）。
-- 分类体系管理、AI 自动/自定义/混合分类、分类审核。
-- 照片整理（仅建目录 / 复制 / 移动，安全撤销）。
-- 任务恢复、性能优化、重复图片检测、安装程序。
+- 分层解决方案（`PhotoMind.Core` / `PhotoMind.Infrastructure` / `PhotoMind.App`，MVVM）。
+- SQLite（EF Core）+ WAL，9 张表；结构化日志（Serilog）。
+- 安全优先：扫描/分类只读原图，AI 只给建议，文件操作由用户确认，分类与整理分离，本地数据优先。
 
 ---
 
@@ -67,11 +63,19 @@ PhotoMindAI/
 │   ├── PhotoMind.Infrastructure/ # 扫描/图片处理/数据库/AI(待)/日志
 │   └── PhotoMind.App/            # WPF 应用（Views/ViewModels/Converters/Styles）
 ├── docs/
-│   └── ARCHITECTURE.md
+│   ├── ARCHITECTURE.md
+│   ├── DATABASE.md
+│   ├── DEEPSEEK_API.md
+│   ├── USER_GUIDE.md
+│   ├── TEST_PLAN.md
+│   ├── THIRD_PARTY_NOTICES.md
+│   └── CHANGELOG.md
 └── scripts/
     ├── build.ps1
     ├── test.ps1
-    └── publish.ps1
+    ├── publish.ps1
+    ├── install.ps1
+    └── uninstall.ps1
 ```
 
 ---
@@ -146,3 +150,9 @@ $env:PHOTOMIND_DATA_DIR = "$root\.testdata"   # 可选：指定数据目录，�
 ## 文档
 
 - [架构文档](docs/ARCHITECTURE.md)
+- [数据库设计](docs/DATABASE.md)
+- [DeepSeek API 接入说明](docs/DEEPSEEK_API.md)
+- [用户指南](docs/USER_GUIDE.md)
+- [测试计划](docs/TEST_PLAN.md)
+- [第三方许可声明](docs/THIRD_PARTY_NOTICES.md)
+- [更新日志](docs/CHANGELOG.md)

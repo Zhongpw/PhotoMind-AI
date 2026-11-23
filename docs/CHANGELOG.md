@@ -2,6 +2,22 @@
 
 本文件记录 PhotoMind AI 各开发阶段的变更。
 
+## [0.6.0] — Phase 6：最终发布
+
+**新增功能**
+
+- 自包含 x64 发布（`scripts/publish.ps1` + 运行时包离线下载），不依赖目标机 .NET 运行时。
+- 安装/卸载脚本（`scripts/install.ps1` / `scripts/uninstall.ps1`）：安装到 `%LOCALAPPDATA%\Programs\PhotoMind AI` + 开始菜单快捷方式；卸载默认保留用户数据（须输 YES 才删，且永远不动原图）。
+- 第三方许可声明（`docs/THIRD_PARTY_NOTICES.md`）：MIT/Apache-2.0；ImageSharp = Six Labors Split License v1.0（年收入 ≥100 万美元组织需商业许可，可换 SkiaSharp/Magick.NET）。
+- 文档补齐：`docs/DATABASE.md`（9 张表/索引/决策）、`docs/DEEPSEEK_API.md`（接口/Key 存储/预处理/重试/用量）、`docs/USER_GUIDE.md`（安装/首次使用/整理安全/隐私）、`docs/TEST_PLAN.md`（测试层次/工具/结果/数据安全断言）。
+
+**验证**
+
+- 全量离线编译通过（EXIT=0，仅良性 NU1603 版本解析警告）。
+- Release 自包含发布通过（270 文件，154.7 MB，含 WPF + SQLite 原生库）。
+- 发布版 exe 冒烟验证通过（无需 DOTNET_ROOT，可独立运行、SQLite 建库正常）。
+- 5 个 PowerShell 脚本通过 `[Parser]::ParseFile` 语法校验（0 错误）。
+
 ## [0.5.0] — Phase 5：任务恢复与优化
 
 **新增功能**
