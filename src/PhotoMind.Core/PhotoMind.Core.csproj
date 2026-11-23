@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>PhotoMind.Core</RootNamespace>
+    <AssemblyName>PhotoMind.Core</AssemblyName>
+  </PropertyGroup>
+
+</Project>

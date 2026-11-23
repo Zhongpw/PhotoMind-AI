@@ -1,0 +1,31 @@
+<Application x:Class="PhotoMind.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:PhotoMind.App.ViewModels"
+             xmlns:views="clr-namespace:PhotoMind.App.Views"
+             xmlns:converters="clr-namespace:PhotoMind.App.Converters"
+             ShutdownMode="OnMainWindowClose">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <converters:PathToImageSourceConverter x:Key="PathToImageSource" />
+            <converters:InverseBoolConverter x:Key="InverseBool" />
+            <converters:NullToCollapsedConverter x:Key="NullToCollapsed" />
+            <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+            <!-- ViewModel -> View data templates -->
+            <DataTemplate DataType="{x:Type vm:HomeViewModel}">
+                <views:HomeView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ScanViewModel}">
+                <views:ScanView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:PlaceholderViewModel}">
+                <views:PlaceholderView />
+            </DataTemplate>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

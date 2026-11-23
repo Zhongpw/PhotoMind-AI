@@ -1,0 +1,45 @@
+# Build artifacts
+bin/
+obj/
+artifacts/
+publish/
+out/
+*.user
+*.suo
+*.cache
+.vs/
+
+# Local self-contained toolchain (SDK + NuGet cache) — NOT committed
+.dotnet/
+.dotnet-home/
+.nuget/
+
+# Local app data produced during development runs
+.home/
+.local/
+.testdata/
+.testdata-*/
+*.db
+*.db-shm
+*.db-wal
+
+# Offline restore config (machine-specific; references .nuget/offline)
+nuget.offline.config
+
+# Logs
+logs/
+*.log
+
+# Throwaway tooling
+.tools/*.zip
+.tools/*.log
+.tools/*.txt
+.tools/probe-*.ps1
+
+# Generated test images (regenerable via .tools/gen-test-images.py)
+TestData/
+
+# OS junk
+Thumbs.db
+Desktop.ini
+.DS_Store
