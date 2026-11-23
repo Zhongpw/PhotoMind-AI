@@ -12,7 +12,12 @@ namespace PhotoMind.Infrastructure.AI;
 /// <summary>Stateless HTTP client for the DeepSeek OpenAI-compatible /chat/completions endpoint.</summary>
 public sealed class DeepSeekClient : IDeepSeekClient
 {
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(120) };
+    // Bypass the system proxy by default: a configured WinINet proxy (e.g. 127.0.0.1:7890)
+    // can be down or unreachable and would otherwise break direct access to api.deepseek.com.
+    private static readonly HttpClient Http = new(new SocketsHttpHandler { UseProxy = false })
+    {
+        Timeout = TimeSpan.FromSeconds(120)
+    };
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public async Task<DeepSeekResponse> ChatAsync(string baseUrl, string apiKey, DeepSeekRequest request, CancellationToken ct = default)
