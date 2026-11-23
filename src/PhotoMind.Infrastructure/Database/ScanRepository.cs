@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using PhotoMind.Core.DTOs;
+using PhotoMind.Core.Enums;
 using PhotoMind.Core.Interfaces;
 using PhotoMind.Core.Models;
 
@@ -95,5 +97,30 @@ public sealed class ScanRepository : IScanRepository
         var rows = await db.Images.Where(x => imageIds.Contains(x.Id)).ToListAsync(cancellationToken).ConfigureAwait(false);
         db.Images.RemoveRange(rows);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<DuplicateImageGroup>> GetDuplicateGroupsAsync(CancellationToken cancellationToken = default)
+    {
+        await using var db = await _factory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+
+        var duplicateHashes = await db.Images.AsNoTracking()
+            .Where(i => i.ScanStatus == ImageScanStatus.Scanned && i.FileHash.Length > 0)
+            .GroupBy(i => i.FileHash)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        if (duplicateHashes.Count == 0)
+            return Array.Empty<DuplicateImageGroup>();
+
+        var images = await db.Images.AsNoTracking()
+            .Where(i => duplicateHashes.Contains(i.FileHash))
+            .OrderBy(i => i.FileHash).ThenBy(i => i.Id)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        return images
+            .GroupBy(i => i.FileHash)
+            .Select(g => new DuplicateImageGroup { FileHash = g.Key, Images = g.ToList() })
+            .ToList();
     }
 }

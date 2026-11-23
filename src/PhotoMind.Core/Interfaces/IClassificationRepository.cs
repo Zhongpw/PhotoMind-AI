@@ -37,4 +37,10 @@ public interface IClassificationRepository
     Task<ClassificationResult?> GetResultAsync(long id, CancellationToken ct = default);
     Task UpdateResultAsync(ClassificationResult result, CancellationToken ct = default);
     Task DeleteResultAsync(long id, CancellationToken ct = default);
+
+    /// <summary>Recent classification tasks (history page).</summary>
+    Task<IReadOnlyList<ClassificationTask>> GetRecentClassificationTasksAsync(int take, CancellationToken ct = default);
+
+    /// <summary>Aggregated API usage (request count, tokens, estimated cost).</summary>
+    Task<ApiUsageSummary> GetUsageSummaryAsync(CancellationToken ct = default);
 }

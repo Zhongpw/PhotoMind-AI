@@ -40,6 +40,9 @@ public static class DependencyInjection
         services.AddSingleton<IOrganizeRepository, OrganizeRepository>();
         services.AddSingleton<IOrganizeService, OrganizeService>();
 
+        // Task recovery (marks interrupted tasks Failed at startup).
+        services.AddSingleton<ITaskRecoveryService, TaskRecoveryService>();
+
         services.AddDbContextFactory<AppDbContext>((sp, options) =>
         {
             var paths = sp.GetRequiredService<IAppPaths>();

@@ -25,6 +25,7 @@ public sealed partial class MainViewModel : ObservableObject
         ReviewViewModel review,
         OrganizeViewModel organize,
         CategoryManagementViewModel categoryManagement,
+        HistoryViewModel history,
         SettingsViewModel settings)
     {
         NavigationItems.Add(new NavigationItem("首页", "🏠", home));
@@ -33,7 +34,7 @@ public sealed partial class MainViewModel : ObservableObject
         NavigationItems.Add(new NavigationItem("分类审核", "✅", review));
         NavigationItems.Add(new NavigationItem("照片整理", "📁", organize));
         NavigationItems.Add(new NavigationItem("分类管理", "🏷️", categoryManagement));
-        NavigationItems.Add(new NavigationItem("历史任务", "🕘", new PlaceholderViewModel("历史任务")));
+        NavigationItems.Add(new NavigationItem("历史任务", "🕘", history));
         NavigationItems.Add(new NavigationItem("设置", "⚙️", settings));
 
         WeakReferenceMessenger.Default.Register<NavigateMessage>(this, (_, message) => NavigateToKey(message.PageKey));

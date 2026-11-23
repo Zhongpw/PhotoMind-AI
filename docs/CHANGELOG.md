@@ -2,6 +2,23 @@
 
 本文件记录 PhotoMind AI 各开发阶段的变更。
 
+## [0.5.0] — Phase 5：任务恢复与优化
+
+**新增功能**
+
+- 任务中断恢复（`TaskRecoveryService`）：启动时把 Pending/Running/Paused 的扫描/分类/整理任务标记为 Failed，防止异常退出后状态悬挂。
+- 重复图片检测（`IScanRepository.GetDuplicateGroupsAsync`）：按 SHA-256 分组，仅提示、不删除。
+- API 用量统计（`IClassificationRepository.GetUsageSummaryAsync`）：累计请求数、输入/输出/总 Token、估算费用与估算请求数。
+- 历史任务页（`HistoryViewModel`/`HistoryView`）：三类任务记录（扫描/分类/整理）+ 重复图片组 + API 用量摘要。
+- 缩略图解码并发限制（`ThumbnailService`：`SemaphoreSlim` 按 CPU 核数限制同时解码数量）。
+
+**验证**
+
+- 全量离线编译通过（EXIT=0，仅良性 NU1603 版本解析警告）。
+- 应用启动验证通过（WPF 可运行、SQLite 可连接、启动时任务恢复正常）。
+- 任务恢复/重复/用量冒烟验证通过（10/10）。
+- 10,000 张图片性能测试通过：扫描 49.35s、峰值内存 100.5 MB、分页查询 14.3 ms、0 失败。
+
 ## [0.4.0] — Phase 4：照片整理
 
 **新增功能**

@@ -1,3 +1,4 @@
+using PhotoMind.Core.DTOs;
 using PhotoMind.Core.Models;
 
 namespace PhotoMind.Core.Interfaces;
@@ -20,4 +21,7 @@ public interface IScanRepository
 
     /// <summary>Deletes cached thumbnails and scan records for the given image set (never touches originals).</summary>
     Task DeleteScanRecordsAsync(IReadOnlyList<long> imageIds, CancellationToken cancellationToken = default);
+
+    /// <summary>Groups scanned images by identical SHA-256 hash, returning only groups with 2+ copies.</summary>
+    Task<IReadOnlyList<DuplicateImageGroup>> GetDuplicateGroupsAsync(CancellationToken cancellationToken = default);
 }

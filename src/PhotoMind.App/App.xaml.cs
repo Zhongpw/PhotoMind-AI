@@ -37,6 +37,12 @@ public partial class App : Application
             var dbFactory = Services.GetRequiredService<IDbContextFactory<AppDbContext>>();
             DatabaseInitializer.InitializeAsync(dbFactory).GetAwaiter().GetResult();
 
+            // Recover tasks left in a running state by an abnormal exit (never touches originals).
+            var recovery = Services.GetRequiredService<ITaskRecoveryService>();
+            var recoveryResult = recovery.RecoverInterruptedTasksAsync().GetAwaiter().GetResult();
+            if (recoveryResult.TotalRecovered > 0)
+                Log.Warning("任务恢复：{Count} 个中断任务已标记为失败", recoveryResult.TotalRecovered);
+
             var window = Services.GetRequiredService<MainWindow>();
             MainWindow = window;
             window.Show();
@@ -60,6 +66,7 @@ public partial class App : Application
         services.AddSingleton<ReviewViewModel>();
         services.AddSingleton<OrganizeViewModel>();
         services.AddSingleton<CategoryManagementViewModel>();
+        services.AddSingleton<HistoryViewModel>();
         services.AddSingleton<SettingsViewModel>();
 
         services.AddSingleton<MainWindow>();

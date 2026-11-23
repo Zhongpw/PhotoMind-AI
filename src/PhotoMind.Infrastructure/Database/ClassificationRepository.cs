@@ -222,6 +222,46 @@ public sealed class ClassificationRepository : IClassificationRepository
         await db.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<ClassificationTask>> GetRecentClassificationTasksAsync(int take, CancellationToken ct = default)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+        return await db.ClassificationTasks.AsNoTracking()
+            .OrderByDescending(t => t.Id)
+            .Take(take)
+            .ToListAsync(ct).ConfigureAwait(false);
+    }
+
+    public async Task<ApiUsageSummary> GetUsageSummaryAsync(CancellationToken ct = default)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+
+        var count = await db.ApiUsages.CountAsync(ct).ConfigureAwait(false);
+        if (count == 0)
+            return new ApiUsageSummary();
+
+        var totals = await db.ApiUsages
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Input = g.Sum(x => (long)x.InputTokens),
+                Output = g.Sum(x => (long)x.OutputTokens),
+                Total = g.Sum(x => (long)x.TotalTokens),
+                Cost = g.Sum(x => (double)x.EstimatedCost),
+                Estimated = g.Count(x => x.IsEstimated),
+            })
+            .FirstAsync(ct).ConfigureAwait(false);
+
+        return new ApiUsageSummary
+        {
+            RequestCount = count,
+            InputTokens = totals.Input,
+            OutputTokens = totals.Output,
+            TotalTokens = totals.Total,
+            EstimatedCost = (decimal)totals.Cost,
+            EstimatedCount = totals.Estimated,
+        };
+    }
+
     private static ClassificationResultSummary ToSummary(ClassificationResult r, Image img, IReadOnlyDictionary<long, Category> categories)
     {
         return new ClassificationResultSummary

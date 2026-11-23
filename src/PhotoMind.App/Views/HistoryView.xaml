@@ -1,0 +1,88 @@
+<UserControl x:Class="PhotoMind.App.Views.HistoryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="24,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- ============ Header ============ -->
+        <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,16">
+            <StackPanel>
+                <Grid>
+                    <TextBlock Text="历史任务" Style="{StaticResource PageTitle}" VerticalAlignment="Center" />
+                    <Button Content="🔄 刷新" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Right"
+                            Command="{Binding RefreshCommand}" />
+                </Grid>
+                <TextBlock Text="{Binding UsageText}" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="0,12,0,0" />
+                <TextBlock Text="{Binding DuplicateCountText}" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                <ProgressBar Margin="0,12,0,0" IsIndeterminate="{Binding IsLoading}" />
+            </StackPanel>
+        </Border>
+
+        <!-- ============ Lists ============ -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="任务记录" Style="{StaticResource SectionTitle}" Margin="0,0,0,8" />
+                <TextBlock Text="{Binding StatusText}" Style="{StaticResource SecondaryText}" Margin="0,0,0,8" />
+
+                <ItemsControl ItemsSource="{Binding Tasks}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Card}" Margin="0,0,0,8" Padding="12,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0" Background="{StaticResource AccentSubtleBrush}" CornerRadius="4"
+                                            Padding="8,3" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Type}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" FontSize="11" />
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Detail}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Started}" Style="{StaticResource SecondaryText}" Margin="0,2,0,0" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="12,0,0,0">
+                                        <TextBlock Text="{Binding Status}" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                                        <TextBlock Text="{Binding Progress}" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock Text="重复图片" Style="{StaticResource SectionTitle}" Margin="0,8,0,8" />
+                <ItemsControl ItemsSource="{Binding Duplicates}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Card}" Margin="0,0,0,8" Padding="12,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0" Background="#FFF4CE" CornerRadius="4" Padding="8,3" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Count, StringFormat={}{0} 张}" Foreground="{StaticResource WarningBrush}" FontWeight="SemiBold" FontSize="11" />
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Paths}" TextWrapping="Wrap" FontSize="12" />
+                                        <TextBlock Text="{Binding Hash, StringFormat=SHA-256: {0}}" Style="{StaticResource SecondaryText}" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
