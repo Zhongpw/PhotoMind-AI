@@ -23,6 +23,7 @@ public sealed partial class MainViewModel : ObservableObject
         ScanViewModel scan,
         ClassificationViewModel classify,
         ReviewViewModel review,
+        OrganizeViewModel organize,
         CategoryManagementViewModel categoryManagement,
         SettingsViewModel settings)
     {
@@ -30,7 +31,7 @@ public sealed partial class MainViewModel : ObservableObject
         NavigationItems.Add(new NavigationItem("图片扫描", "🖼️", scan));
         NavigationItems.Add(new NavigationItem("AI 智能分类", "🤖", classify));
         NavigationItems.Add(new NavigationItem("分类审核", "✅", review));
-        NavigationItems.Add(new NavigationItem("照片整理", "📁", new PlaceholderViewModel("照片整理")));
+        NavigationItems.Add(new NavigationItem("照片整理", "📁", organize));
         NavigationItems.Add(new NavigationItem("分类管理", "🏷️", categoryManagement));
         NavigationItems.Add(new NavigationItem("历史任务", "🕘", new PlaceholderViewModel("历史任务")));
         NavigationItems.Add(new NavigationItem("设置", "⚙️", settings));

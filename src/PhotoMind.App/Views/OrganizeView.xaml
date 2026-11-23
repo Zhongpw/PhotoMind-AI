@@ -1,0 +1,76 @@
+<UserControl x:Class="PhotoMind.App.Views.OrganizeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24,20">
+
+            <!-- ============ 整理设置 ============ -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="照片整理" Style="{StaticResource PageTitle}" Margin="0,0,0,16" />
+
+                    <TextBlock Text="目标目录" Style="{StaticResource SectionTitle}" />
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <TextBox Text="{Binding DestinationPath, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="420" VerticalContentAlignment="Center"
+                                 ToolTip="整理后的分类文件夹将创建在此目录下" />
+                        <Button Content="浏览…" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding BrowseDestinationCommand}" Margin="8,0,0,0" />
+                    </StackPanel>
+
+                    <TextBlock Text="操作方式" Style="{StaticResource SectionTitle}" Margin="0,16,0,0" />
+                    <ComboBox Width="360" Margin="0,8,0,0" HorizontalAlignment="Left"
+                              ItemsSource="{Binding OperationOptions}"
+                              DisplayMemberPath="Label" SelectedValuePath="Value"
+                              SelectedValue="{Binding OperationType}" />
+
+                    <CheckBox Content="我已阅读并确认执行所选操作。移动会删除原始文件；复制会保留原始文件。"
+                              IsChecked="{Binding IsConfirmed}" Margin="0,16,0,0" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                        <Button Content="👁 预览" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding PreviewCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBool}}"
+                                Margin="0,0,8,0" />
+                        <Button Content="▶ 开始整理" Command="{Binding StartOrganizeCommand}"
+                                IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBool}}" Margin="0,0,8,0" />
+                        <Button Content="⏸ 暂停" Style="{StaticResource SecondaryButton}" Command="{Binding PauseOrganizeCommand}"
+                                IsEnabled="{Binding IsRunning}" Margin="0,0,8,0" />
+                        <Button Content="▶ 继续" Style="{StaticResource SecondaryButton}" Command="{Binding ResumeOrganizeCommand}"
+                                IsEnabled="{Binding IsPaused}" Margin="0,0,8,0" />
+                        <Button Content="✕ 取消" Style="{StaticResource DangerButton}" Command="{Binding CancelOrganizeCommand}"
+                                IsEnabled="{Binding IsRunning}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ 预览与进度 ============ -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="预览与进度" Style="{StaticResource SectionTitle}" Margin="0,0,0,8" />
+
+                    <TextBox Text="{Binding PreviewSummary, Mode=OneWay}" IsReadOnly="True"
+                             MinHeight="120" AcceptsReturn="True" TextWrapping="Wrap"
+                             Background="#FAFAFA" BorderBrush="{StaticResource BorderBrush}"
+                             FontFamily="Consolas" FontSize="12" VerticalScrollBarVisibility="Auto" />
+
+                    <TextBlock Text="{Binding StatusText}" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="0,12,0,0" />
+                    <ProgressBar Margin="0,10,0,0" IsIndeterminate="{Binding IsRunning}" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <TextBlock Text="已完成 " Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" />
+                        <TextBlock Text="{Binding CompletedCount}" FontSize="12" FontWeight="SemiBold" />
+                        <TextBlock Text=" · 总数 " Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" />
+                        <TextBlock Text="{Binding TotalCount}" FontSize="12" FontWeight="SemiBold" />
+                        <TextBlock Text=" · 失败 " Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" />
+                        <TextBlock Text="{Binding FailedCount}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource ErrorBrush}" />
+                    </StackPanel>
+
+                    <Button Content="↩ 撤销上次整理" Style="{StaticResource DangerButton}"
+                            IsEnabled="{Binding CanUndo}" HorizontalAlignment="Left" Margin="0,14,0,0"
+                            Click="UndoButton_Click" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

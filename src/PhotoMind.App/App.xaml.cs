@@ -58,6 +58,7 @@ public partial class App : Application
         services.AddSingleton<ScanViewModel>();
         services.AddSingleton<ClassificationViewModel>();
         services.AddSingleton<ReviewViewModel>();
+        services.AddSingleton<OrganizeViewModel>();
         services.AddSingleton<CategoryManagementViewModel>();
         services.AddSingleton<SettingsViewModel>();
 

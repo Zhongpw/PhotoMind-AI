@@ -35,6 +35,11 @@ public static class DependencyInjection
         services.AddSingleton<IClassificationRepository, ClassificationRepository>();
         services.AddSingleton<IClassificationService, ClassificationService>();
 
+        // Organize (file arrangement) services.
+        services.AddSingleton<SafeFileOperations>();
+        services.AddSingleton<IOrganizeRepository, OrganizeRepository>();
+        services.AddSingleton<IOrganizeService, OrganizeService>();
+
         services.AddDbContextFactory<AppDbContext>((sp, options) =>
         {
             var paths = sp.GetRequiredService<IAppPaths>();
