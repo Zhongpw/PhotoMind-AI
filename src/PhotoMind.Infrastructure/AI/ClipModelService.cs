@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using PhotoMind.Core.Constants;
@@ -209,6 +210,13 @@ public sealed class ClipModelService : IClipModelService
         var topIdx = ArgMax(topProbs);
         var topCategory = topLevel[topIdx];
 
+        // Raw similarity margin between top-1 and top-2: the calibration signal.
+        var top1Sim = topSims[topIdx];
+        var top2Sim = topLevel.Count > 1
+            ? topSims.Where((_, i) => i != topIdx).Max()
+            : top1Sim;
+        var margin = top1Sim - top2Sim;
+
         // 2. Match against that top-level's children.
         var children = categories.Where(c => c.ParentId == topCategory.Id).OrderBy(c => c.SortOrder).ThenBy(c => c.Id).ToList();
         var subCategoryId = (long?)null;
@@ -238,22 +246,66 @@ public sealed class ClipModelService : IClipModelService
             SubCategoryName = subCategoryName,
             Confidence = topProbs[topIdx],
             SubCategoryConfidence = subConfidence,
+            Top1Similarity = top1Sim,
+            Top2Similarity = top2Sim,
+            Margin = margin,
             ImageEmbedding = imageEmbedding,
         };
     }
 
     private async Task<float[]> GetCategoryEmbeddingAsync(Category category, CancellationToken ct)
     {
-        var label = string.IsNullOrWhiteSpace(category.Alias) ? category.Name : category.Alias;
+        var prompts = GetPrompts(category);
+
+        // The cache key embeds the full prompt set so a classification-system change naturally
+        // invalidates stale entries (old entries are simply orphaned, never served for new prompts).
+        var label = string.Join("\u0001", prompts);
         var key = ClipTextCache.MakeKey(category.Id, label);
 
         if (_textCache.TryGet(key, out var cached) && cached is { Length: > 0 })
             return cached;
 
-        var text = string.Format(PromptTemplate, label);
-        var embedding = await EncodeTextAsync(text, ct).ConfigureAwait(false);
-        _textCache.Set(key, embedding);
-        return embedding;
+        // Prompt ensemble: mean (spherical mean after re-normalization) of the per-prompt embeddings.
+        var sum = new float[AiConstants.ClipEmbeddingDim];
+        foreach (var prompt in prompts)
+        {
+            var text = string.Format(PromptTemplate, prompt);
+            var embedding = await EncodeTextAsync(text, ct).ConfigureAwait(false);
+            for (var i = 0; i < sum.Length; i++)
+                sum[i] += embedding[i];
+        }
+
+        var mean = Normalize(sum);
+        _textCache.Set(key, mean);
+        return mean;
+    }
+
+    /// <summary>
+    /// Returns the CLIP prompt(s) for a category: the <see cref="Category.PromptsJson"/> ensemble when
+    /// present, otherwise the single <see cref="Category.Alias"/> (falling back to the Chinese name).
+    /// </summary>
+    private static string[] GetPrompts(Category category)
+    {
+        if (!string.IsNullOrWhiteSpace(category.PromptsJson))
+        {
+            try
+            {
+                var prompts = JsonSerializer.Deserialize<string[]>(category.PromptsJson);
+                var trimmed = prompts?
+                    .Select(p => p.Trim())
+                    .Where(p => p.Length > 0)
+                    .ToArray();
+                if (trimmed is { Length: > 0 })
+                    return trimmed;
+            }
+            catch (JsonException)
+            {
+                // Malformed PromptsJson: fall through to the single-alias path.
+            }
+        }
+
+        var alias = string.IsNullOrWhiteSpace(category.Alias) ? category.Name : category.Alias;
+        return new[] { alias };
     }
 
     /// <summary>Builds session options; attempts CUDA when requested, falling back to CPU.</summary>

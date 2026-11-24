@@ -2,6 +2,23 @@
 
 本文件记录 PhotoMind AI 各开发阶段的变更。
 
+## [0.10.0] — 增量任务 04：CLIP 置信度校准与省 Token 优化
+
+**新增功能**
+
+- Prompt Ensemble：26 个类别从单条英文别名升级为每条 3 个自然、具体的英文名词短语（共 78 条），CLIP 对每个 prompt 单独编码后取球面均值（L2 归一化平均）作为类别嵌入；`Category.PromptsJson` 存 JSON 数组，`AddCategoryPrompts` 迁移落地，分类 ID 与父子关系完全保留。
+- 置信度校准：新增 `ClipCalibration`（`calibrated = sigmoid(slope·margin + intercept)`，`margin = top1Sim − top2Sim` 原始余弦差值），`ClipMatchResult` 新增 `Top1Similarity`/`Top2Similarity`/`Margin`，`ClassificationService` 在 `ClipCalibrationSlope > 0` 时用校准置信度门控，否则回退原始 softmax（默认禁用）。
+- 独立评估工具（`.tools/clip-eval/`）：导入文件夹树（文件夹名=人工标注类别）、批量本地 CLIP 推理、导出 CSV、分层随机切分（拟合/留出）、双特征 logistic 拟合（margin / top1sim）、统计 top-1 准确率/各类别准确率/覆盖率/误采信率/API 减少比例；不调用 DeepSeek、不改正式分类库。
+- 验证集下载脚本（`.tools/clip-eval/download-validation2.mjs`）：Wikimedia Commons 真实照片，按英文别名分类落盘。
+
+**验证（诚实结论）**
+
+- 全量离线编译通过（EXIT=0，5 项目，0 警告 0 错误）。
+- 单元测试 134/134 通过（PhotoMind.Tests 104/104 + PhotoMind.App.Tests 30/30）。
+- 独立验证集 78 张真实照片：top-1 准确率 **57/78 = 73.1%**（随机基线 16.7%）；子类 41/59 = 69.5%。Prompt Ensemble 使同 14 张验证集从 71.4%（10/14）提升到 78.6%（11/14，其中"鸟"从误判"自然"修正为"动物"）。
+- 校准拟合：margin 法 `sigmoid(1.39·margin+1.17)`、top1sim 法 `sigmoid(1.18·top1sim+0.92)`；**两类校准在 0.8 阈值下覆盖率均为 0%**（最大校准置信度约 0.77 < 0.8），DeepSeek 减少比例 0.0%，误采信 0/0。
+- 结论：CLIP 有真实信号（73.1% 远超随机），但 6 个宽泛顶级类别的图像-文本余弦相似度挤在 0.18–0.27 窄带、margin 最大仅约 0.035，特征几乎不携带超出基准率的判别信息，导致 0.8 阈值不可达。**保留 0.8 默认值、未降阈值；校准数据不足（78 张远不足 500、分布不均），拟合系数不具备泛化性，运行时默认禁用（slope=0）**。无 GPU 实测（本机无 NVIDIA GPU，仅验证 CUDA 自动回退）。详见 `docs/CLIP_CALIBRATION.md`。
+
 ## [0.9.0] — 增量任务 03：本地 CLIP 识别 + 省 Token + GPU 加速
 
 **新增功能**

@@ -257,7 +257,14 @@ public sealed class ClassificationService : IClassificationService
             var embedding = await _clipModel.EncodeImageAsync(image.OriginalPath, ct).ConfigureAwait(false);
             var match = await _clipModel.MatchAsync(embedding, categories, config.ClipTemperature, ct).ConfigureAwait(false);
 
-            if (match.CategoryId is not long categoryId || match.Confidence < config.ClipConfidenceThreshold)
+            if (match.CategoryId is not long categoryId)
+                return false;
+
+            // Confidence gate. When calibration is active (slope > 0) use the logistic-calibrated
+            // margin confidence; otherwise keep the raw temperature-softmax probability.
+            var calibrated = ClipCalibration.Calibrate(match.Margin, config.ClipCalibrationSlope, config.ClipCalibrationIntercept);
+            var gateConfidence = double.IsNaN(calibrated) ? match.Confidence : calibrated;
+            if (gateConfidence < config.ClipConfidenceThreshold)
                 return false;
 
             var topName = categories.FirstOrDefault(c => c.Id == categoryId)?.Name ?? match.CategoryName;
@@ -265,14 +272,15 @@ public sealed class ClassificationService : IClassificationService
                 ? categories.FirstOrDefault(c => c.Id == subId)?.Name ?? match.SubCategoryName
                 : null;
 
+            var confidenceLabel = double.IsNaN(calibrated) ? "置信度" : "校准置信度";
             var result = new ClassificationResult
             {
                 ImageId = image.Id,
                 CategoryId = categoryId,
                 SubCategoryId = match.SubCategoryId,
                 Description = subName is null ? topName : $"{topName} > {subName}",
-                Reason = $"本地 CLIP 识别（置信度 {match.Confidence:P1}），未调用 DeepSeek API",
-                Confidence = match.Confidence,
+                Reason = $"本地 CLIP 识别（{confidenceLabel} {gateConfidence:P1}），未调用 DeepSeek API",
+                Confidence = gateConfidence,
                 TagsJson = "[]",
                 NeedsReview = false,
                 ModelName = ClipModelName,
@@ -281,7 +289,7 @@ public sealed class ClassificationService : IClassificationService
             };
 
             await _repo.SaveResultAsync(result, ct).ConfigureAwait(false);
-            _logger.Information("图片 {ImageId} 由本地 CLIP 分类：{Category}（置信度 {Confidence:P1}）", image.Id, result.Description, match.Confidence);
+            _logger.Information("图片 {ImageId} 由本地 CLIP 分类：{Category}（置信度 {Confidence:P1}）", image.Id, result.Description, gateConfidence);
             return true;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

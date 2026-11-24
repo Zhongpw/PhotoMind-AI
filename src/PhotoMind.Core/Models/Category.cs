@@ -10,6 +10,13 @@ public sealed class Category
     /// <summary>Optional English alias used as the CLIP text prompt (CLIP understands English far better than Chinese).</summary>
     public string? Alias { get; set; }
 
+    /// <summary>
+    /// Optional JSON array of natural English CLIP prompts (Prompt Ensemble). When non-empty, the CLIP
+    /// text embedding is the mean of the per-prompt embeddings; otherwise the single <see cref="Alias"/>
+    /// is used with the template "a photo of {alias}".
+    /// </summary>
+    public string? PromptsJson { get; set; }
+
     /// <summary>Parent category id; null for a top-level category.</summary>
     public long? ParentId { get; set; }
 

@@ -32,6 +32,17 @@ public static class AiConstants
     /// <summary>Default CLIP softmax confidence threshold for accepting a result without DeepSeek.</summary>
     public const double DefaultClipConfidenceThreshold = 0.8;
 
+    /// <summary>
+    /// Logistic-calibration slope applied to the top1/top2 cosine-similarity margin to produce a
+    /// calibrated confidence (Platt-style scaling). 0 disables calibration and falls back to the raw
+    /// temperature-softmax confidence. Non-zero values must be fit on a held-out calibration set and
+    /// are documented in docs/CLIP_CALIBRATION.md.
+    /// </summary>
+    public const double DefaultClipCalibrationSlope = 0;
+
+    /// <summary>Logistic-calibration intercept (see <see cref="DefaultClipCalibrationSlope"/>).</summary>
+    public const double DefaultClipCalibrationIntercept = 0;
+
     /// <summary>CLIP input image size (ViT-B/32 uses 224x224).</summary>
     public const int ClipImageSize = 224;
 

@@ -18,6 +18,15 @@ public sealed class ClipMatchResult
     /// <summary>Softmax probability of the winning sub-category within its parent (informational).</summary>
     public double SubCategoryConfidence { get; set; }
 
+    /// <summary>Raw cosine similarity (L2-normalized dot product) of the top-1 top-level category.</summary>
+    public double Top1Similarity { get; set; }
+
+    /// <summary>Raw cosine similarity of the top-2 top-level category.</summary>
+    public double Top2Similarity { get; set; }
+
+    /// <summary>Top1Similarity minus Top2Similarity; the signal used by logistic confidence calibration.</summary>
+    public double Margin { get; set; }
+
     /// <summary>Raw CLIP image embedding (L2-normalized) used for this decision; null when inference failed.</summary>
     public float[]? ImageEmbedding { get; set; }
 }

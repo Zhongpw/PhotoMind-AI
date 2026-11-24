@@ -91,6 +91,9 @@ namespace PhotoMind.Infrastructure.Migrations
                     b.Property<long?>("ParentId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("PromptsJson")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER");
 

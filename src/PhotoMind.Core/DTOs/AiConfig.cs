@@ -42,6 +42,12 @@ public sealed class AiConfig
     /// <summary>CLIP softmax confidence above which a result is accepted without a DeepSeek request.</summary>
     public double ClipConfidenceThreshold { get; set; } = AiConstants.DefaultClipConfidenceThreshold;
 
+    /// <summary>Logistic-calibration slope for CLIP top1/top2 margin (0 = use raw softmax confidence).</summary>
+    public double ClipCalibrationSlope { get; set; } = AiConstants.DefaultClipCalibrationSlope;
+
+    /// <summary>Logistic-calibration intercept for CLIP top1/top2 margin.</summary>
+    public double ClipCalibrationIntercept { get; set; } = AiConstants.DefaultClipCalibrationIntercept;
+
     /// <summary>Normalizes user input so invalid values never reach the request layer.</summary>
     public AiConfig Sanitized()
     {
@@ -51,6 +57,8 @@ public sealed class AiConfig
         PreviewQuality = Math.Clamp(PreviewQuality, 10, 100);
         ClipTemperature = Math.Clamp(ClipTemperature, 0.01, 1.0);
         ClipConfidenceThreshold = Math.Clamp(ClipConfidenceThreshold, 0.0, 1.0);
+        ClipCalibrationSlope = Math.Clamp(ClipCalibrationSlope, 0.0, 10000.0);
+        ClipCalibrationIntercept = Math.Clamp(ClipCalibrationIntercept, -100.0, 100.0);
         if (string.IsNullOrWhiteSpace(BaseUrl))
             BaseUrl = AiConstants.DefaultBaseUrl;
         if (string.IsNullOrWhiteSpace(Model))

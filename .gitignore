@@ -26,6 +26,7 @@ out/
 # CLIP model weights (downloaded separately; source/SHA-256 in docs/THIRD_PARTY_NOTICES.md)
 .models/
 .tools/clip-eval/validation/
+.tools/clip-eval/*.csv
 
 # Offline restore config (machine-specific; references .nuget/offline)
 nuget.offline.config

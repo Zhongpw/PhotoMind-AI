@@ -52,7 +52,9 @@ public sealed class ClassificationServiceTests : IDisposable
         out Mock<IClassificationRepository> repo,
         out FakeDeepSeekClient client,
         out Mock<IClipModelService> clip,
-        Exception? clipError = null)
+        Exception? clipError = null,
+        double clipCalibrationSlope = 0,
+        double clipCalibrationIntercept = 0)
     {
         var categories = new List<Category>
         {
@@ -82,6 +84,8 @@ public sealed class ClassificationServiceTests : IDisposable
             SaveTokenMode = saveTokenMode,
             ClipConfidenceThreshold = 0.8,
             ClipTemperature = 0.07,
+            ClipCalibrationSlope = clipCalibrationSlope,
+            ClipCalibrationIntercept = clipCalibrationIntercept,
             Model = "test-model",
             Concurrency = 2,
         });
@@ -162,6 +166,50 @@ public sealed class ClassificationServiceTests : IDisposable
 
         Assert.Equal(TaskState.Completed, task.Status);
         Assert.Equal(1, task.CompletedCount);
+        Assert.Equal(1, client.CallCount);
+        repo.Verify(r => r.SaveResultAsync(It.Is<ClassificationResult>(x => x.Source == ClassificationSource.DeepSeek), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ClassifyAsync_CalibratedHighMargin_AcceptsWithoutDeepSeek()
+    {
+        // Raw softmax is low (0.3) but the margin is large; with calibration enabled the calibrated
+        // confidence should gate the decision, not the raw softmax.
+        var clipResult = new ClipMatchResult
+        {
+            CategoryId = 1,
+            CategoryName = "animals",
+            Confidence = 0.3,
+            Margin = 0.5,
+        };
+        // sigmoid(20 * 0.5 + 0) = sigmoid(10) ~ 1.0 >= 0.8
+        var svc = Build(true, clipResult, out var repo, out var client, out var clip, clipCalibrationSlope: 20, clipCalibrationIntercept: 0);
+
+        var task = await ClassifyAsync(svc);
+
+        Assert.Equal(TaskState.Completed, task.Status);
+        Assert.Equal(0, client.CallCount);
+        repo.Verify(r => r.SaveResultAsync(It.Is<ClassificationResult>(x => x.Source == ClassificationSource.Clip), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ClassifyAsync_CalibratedLowMargin_FallsBackToDeepSeek()
+    {
+        // Raw softmax is high (0.95) but the margin is tiny; with calibration enabled the calibrated
+        // confidence is low, so it must fall back to DeepSeek (calibration overrides the raw value).
+        var clipResult = new ClipMatchResult
+        {
+            CategoryId = 1,
+            CategoryName = "animals",
+            Confidence = 0.95,
+            Margin = 0.01,
+        };
+        // sigmoid(20 * 0.01 + 0) = sigmoid(0.2) ~ 0.55 < 0.8
+        var svc = Build(true, clipResult, out var repo, out var client, out var clip, clipCalibrationSlope: 20, clipCalibrationIntercept: 0);
+
+        var task = await ClassifyAsync(svc);
+
+        Assert.Equal(TaskState.Completed, task.Status);
         Assert.Equal(1, client.CallCount);
         repo.Verify(r => r.SaveResultAsync(It.Is<ClassificationResult>(x => x.Source == ClassificationSource.DeepSeek), It.IsAny<CancellationToken>()), Times.Once);
     }
