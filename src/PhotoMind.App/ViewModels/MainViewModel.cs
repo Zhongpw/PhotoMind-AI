@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
+using PhotoMind.Core.Interfaces;
 
 namespace PhotoMind.App.ViewModels;
 
@@ -10,6 +11,8 @@ namespace PhotoMind.App.ViewModels;
 /// </summary>
 public sealed partial class MainViewModel : ObservableObject
 {
+    private readonly ISecretStore _secretStore;
+
     public ObservableCollection<NavigationItem> NavigationItems { get; } = new();
 
     [ObservableProperty]
@@ -17,6 +20,12 @@ public sealed partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private object? _currentViewModel;
+
+    [ObservableProperty]
+    private ApiStatusKind _apiStatus = ApiStatusKind.NotConfigured;
+
+    [ObservableProperty]
+    private string _apiStatusText = "未配置";
 
     public MainViewModel(
         HomeViewModel home,
@@ -26,8 +35,11 @@ public sealed partial class MainViewModel : ObservableObject
         OrganizeViewModel organize,
         CategoryManagementViewModel categoryManagement,
         HistoryViewModel history,
-        SettingsViewModel settings)
+        SettingsViewModel settings,
+        ISecretStore secretStore)
     {
+        _secretStore = secretStore;
+
         NavigationItems.Add(new NavigationItem("首页", "🏠", home));
         NavigationItems.Add(new NavigationItem("图片扫描", "🖼️", scan));
         NavigationItems.Add(new NavigationItem("AI 智能分类", "🤖", classify));
@@ -38,9 +50,33 @@ public sealed partial class MainViewModel : ObservableObject
         NavigationItems.Add(new NavigationItem("设置", "⚙️", settings));
 
         WeakReferenceMessenger.Default.Register<NavigateMessage>(this, (_, message) => NavigateToKey(message.PageKey));
+        WeakReferenceMessenger.Default.Register<ApiStatusChangedMessage>(this, (_, message) => ApplyApiStatus(message.Kind));
 
         SelectedNavigationItem = NavigationItems[0];
         CurrentViewModel = SelectedNavigationItem.Content;
+
+        // Detect the persisted API key state independently of the Settings page so the top bar is correct at startup,
+        // even if the Settings view model's own async initialization has not finished yet.
+        _ = InitializeApiStatusAsync();
+    }
+
+    private async Task InitializeApiStatusAsync()
+    {
+        try
+        {
+            var kind = await ApiStatusDetector.DetectAsync(_secretStore).ConfigureAwait(true);
+            ApplyApiStatus(kind);
+        }
+        catch (Exception)
+        {
+            // Keep the conservative "未配置" default if the secret store cannot be read.
+        }
+    }
+
+    private void ApplyApiStatus(ApiStatusKind kind)
+    {
+        ApiStatus = kind;
+        ApiStatusText = ApiStatusDetector.ToText(kind);
     }
 
     partial void OnSelectedNavigationItemChanged(NavigationItem? value)

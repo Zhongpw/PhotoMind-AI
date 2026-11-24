@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Messaging;
 using Moq;
 using PhotoMind.App.ViewModels;
 using PhotoMind.Core.Constants;
@@ -131,5 +132,93 @@ public class SettingsViewModelTests
 
         vm.ToggleShowKeyCommand.Execute(null);
         Assert.False(vm.ShowApiKey);
+    }
+
+    [Fact]
+    public async Task SaveApiKey_BroadcastsConfigured()
+    {
+        var received = new List<ApiStatusKind>();
+        var recipient = new object();
+        WeakReferenceMessenger.Default.Register<ApiStatusChangedMessage>(recipient, (_, m) => received.Add(m.Kind));
+        try
+        {
+            var vm = CreateVm();
+            vm.ApiKeyInput = "sk-test";
+
+            await vm.SaveApiKeyCommand.ExecuteAsync(null);
+
+            Assert.Contains(ApiStatusKind.Configured, received);
+        }
+        finally
+        {
+            WeakReferenceMessenger.Default.Unregister<ApiStatusChangedMessage>(recipient);
+        }
+    }
+
+    [Fact]
+    public async Task DeleteApiKey_BroadcastsNotConfigured()
+    {
+        var received = new List<ApiStatusKind>();
+        var recipient = new object();
+        WeakReferenceMessenger.Default.Register<ApiStatusChangedMessage>(recipient, (_, m) => received.Add(m.Kind));
+        try
+        {
+            var vm = CreateVm();
+            await vm.DeleteApiKeyCommand.ExecuteAsync(null);
+
+            Assert.Contains(ApiStatusKind.NotConfigured, received); // delete transition
+        }
+        finally
+        {
+            WeakReferenceMessenger.Default.Unregister<ApiStatusChangedMessage>(recipient);
+        }
+    }
+
+    [Fact]
+    public async Task TestConnection_Success_BroadcastsConnected()
+    {
+        _secretStore.Setup(s => s.GetSecretAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("sk-test");
+        _client.Setup(c => c.ChatAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DeepSeekRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DeepSeekResponse());
+
+        var received = new List<ApiStatusKind>();
+        var recipient = new object();
+        WeakReferenceMessenger.Default.Register<ApiStatusChangedMessage>(recipient, (_, m) => received.Add(m.Kind));
+        try
+        {
+            var vm = CreateVm();
+            await vm.TestConnectionCommand.ExecuteAsync(null);
+
+            Assert.Contains(ApiStatusKind.Connected, received);
+        }
+        finally
+        {
+            WeakReferenceMessenger.Default.Unregister<ApiStatusChangedMessage>(recipient);
+        }
+    }
+
+    [Fact]
+    public async Task TestConnection_Failure_BroadcastsFailed()
+    {
+        _secretStore.Setup(s => s.GetSecretAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("sk-bad");
+        _client.Setup(c => c.ChatAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DeepSeekRequest>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new DeepSeekException(DeepSeekErrorKind.Authentication, "401 invalid key", 401));
+
+        var received = new List<ApiStatusKind>();
+        var recipient = new object();
+        WeakReferenceMessenger.Default.Register<ApiStatusChangedMessage>(recipient, (_, m) => received.Add(m.Kind));
+        try
+        {
+            var vm = CreateVm();
+            await vm.TestConnectionCommand.ExecuteAsync(null);
+
+            Assert.Contains(ApiStatusKind.Failed, received);
+        }
+        finally
+        {
+            WeakReferenceMessenger.Default.Unregister<ApiStatusChangedMessage>(recipient);
+        }
     }
 }

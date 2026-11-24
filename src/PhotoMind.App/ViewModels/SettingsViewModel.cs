@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using PhotoMind.Core.Constants;
 using PhotoMind.Core.DTOs;
 using PhotoMind.Core.Enums;
@@ -75,7 +76,8 @@ public sealed partial class SettingsViewModel : ObservableObject
 
         try
         {
-            HasApiKey = await _secretStore.HasSecretAsync(AiConstants.ApiKeySecretName).ConfigureAwait(true);
+            var kind = await ApiStatusDetector.DetectAsync(_secretStore).ConfigureAwait(true);
+            HasApiKey = kind is ApiStatusKind.Configured or ApiStatusKind.Connected or ApiStatusKind.Failed;
         }
         catch (Exception ex)
         {
@@ -125,6 +127,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             HasApiKey = true;
             ConnectionStatus = null;
             StatusText = "API Key 已加密保存";
+            WeakReferenceMessenger.Default.Send(new ApiStatusChangedMessage(ApiStatusKind.Configured));
         }
         catch (Exception ex)
         {
@@ -142,6 +145,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             HasApiKey = false;
             ConnectionStatus = null;
             StatusText = "API Key 已删除";
+            WeakReferenceMessenger.Default.Send(new ApiStatusChangedMessage(ApiStatusKind.NotConfigured));
         }
         catch (Exception ex)
         {
@@ -184,16 +188,19 @@ public sealed partial class SettingsViewModel : ObservableObject
 
             ConnectionStatus = true;
             StatusText = "连接成功，API Key 有效";
+            WeakReferenceMessenger.Default.Send(new ApiStatusChangedMessage(ApiStatusKind.Connected));
         }
         catch (DeepSeekException ex)
         {
             ConnectionStatus = false;
             StatusText = "连接失败：" + ex.Message;
+            WeakReferenceMessenger.Default.Send(new ApiStatusChangedMessage(ApiStatusKind.Failed));
         }
         catch (Exception ex)
         {
             ConnectionStatus = false;
             StatusText = "连接失败：" + ex.Message;
+            WeakReferenceMessenger.Default.Send(new ApiStatusChangedMessage(ApiStatusKind.Failed));
         }
         finally
         {

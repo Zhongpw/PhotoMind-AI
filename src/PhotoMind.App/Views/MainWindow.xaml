@@ -35,10 +35,32 @@
                                VerticalAlignment="Center" />
                 </StackPanel>
                 <TextBlock Grid.Column="2"
-                           Text="API：未配置"
-                           Foreground="{StaticResource WarningBrush}"
+                           Text="{Binding ApiStatusText}"
                            FontSize="12"
-                           VerticalAlignment="Center" />
+                           VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ApiStatus}" Value="NotConfigured">
+                                    <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ApiStatus}" Value="Configured">
+                                    <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ApiStatus}" Value="Connected">
+                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ApiStatus}" Value="Failed">
+                                    <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ApiStatus}" Value="Error">
+                                    <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </Grid>
         </Border>
 
