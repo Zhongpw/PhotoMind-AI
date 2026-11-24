@@ -281,10 +281,17 @@ public sealed partial class ScanViewModel : ObservableObject
         if (confirm != MessageBoxResult.Yes)
             return;
 
-        var removed = await RemoveFromTaskCoreAsync(items.Select(i => i.Id).ToList()).ConfigureAwait(true);
-        StatusText = removed > 0
-            ? $"已从任务列表移除 {removed:N0} 张图片（不影响原图与全局记录）"
-            : "移除未生效：这些图片可能已不在任务队列中";
+        try
+        {
+            var removed = await RemoveFromTaskCoreAsync(items.Select(i => i.Id).ToList()).ConfigureAwait(true);
+            StatusText = removed > 0
+                ? $"已从任务列表移除 {removed:N0} 张图片（不影响原图与全局记录）"
+                : "移除未生效：这些图片可能已不在任务队列中";
+        }
+        catch (Exception ex)
+        {
+            StatusText = "移除失败：" + ex.Message;
+        }
     }
 
     /// <summary>Testable core: persists the skipped state and refreshes the in-memory list immediately.</summary>
