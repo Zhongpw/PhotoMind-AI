@@ -5,7 +5,8 @@
 - 数据库引擎：**SQLite**（单文件，零配置，适合本地桌面应用）。
 - 数据访问：**EF Core 8**（`Microsoft.EntityFrameworkCore.Sqlite` 8.0.34）。
 - 连接字符串：`Data Source={DatabasePath}`，`DatabasePath` 由 `AppPaths` 提供。
-- 初始化：应用启动时 `DatabaseInitializer.InitializeAsync` 调用 `EnsureCreatedAsync` 建库建表，随后执行分类种子（`CategorySeed`）。**当前为 Phase 1–6 的 EnsureCreated 方案，迁移（Migration）留作后续迭代。**
+- 初始化：应用启动时 `DatabaseInitializer.InitializeAsync` 调用 `MigrateAsync` 应用迁移建库建表，随后执行分类种子（`CategorySeed`）。
+- 迁移：EF Core Migration 管理，首个迁移 `Migrations/20261124023321_InitialCreate`。设计时工厂 `Database/DesignTimeDbContextFactory.cs` 供 `dotnet ef` 使用。
 - 数据库文件：`photomin.db`（默认 `%LOCALAPPDATA%\PhotoMind AI\photomin.db`，可用环境变量 `PHOTOMIND_DATA_DIR` 覆盖数据目录）。
 - 事务：EF Core 默认每 `SaveChanges` 一个事务；扫描/分类/整理均分批提交（`BatchSize`）。
 
@@ -111,9 +112,23 @@
 - OrganizeLogs：TaskId、ImageId。
 - ApiUsage：TaskId、CreatedAt。
 
+## 迁移（Migration）
+
+- 工具：本地 `dotnet-ef` 8.0.34（安装于 `.tools/dotnet-ef/`），配套 `Microsoft.EntityFrameworkCore.Design` 8.0.34。
+- 设计时工厂：`PhotoMind.Infrastructure/Database/DesignTimeDbContextFactory.cs`，`CreateDbContext` 用 `new AppPaths().DatabasePath` 建连接串。
+- 生成新迁移：
+  ```powershell
+  .\.tools\dotnet-ef\dotnet-ef.exe migrations add <名称> `
+    --project src\PhotoMind.Infrastructure\PhotoMind.Infrastructure.csproj `
+    --output-dir Migrations
+  ```
+- 应用迁移：`DatabaseInitializer.InitializeAsync` → `context.Database.MigrateAsync()`（应用启动时自动执行）。
+- 迁移文件：`Migrations/`（`*_InitialCreate.cs` + `.Designer.cs`）+ `AppDbContextModelSnapshot.cs`。
+
 ## 关键设计决策
 
 1. **短生命周期 DbContext**：仓储使用 `IDbContextFactory<AppDbContext>`，每次操作新建 context，避免跨线程共享。
 2. **分类结果与整理分离**：分类结果只存建议，物理文件操作在 OrganizeLogs 记录前/后哈希，保证可撤销。
 3. **重复检测**：`Images.FileHash`（SHA-256）分组，用于历史页展示重复图片。
 4. **SQLite 类型注意**：`decimal`（EstimatedCost）无法直接 `Sum` 聚合，用量统计用 `(double)x.EstimatedCost` 求和后再转回 `decimal`。
+5. **TIFF/HEIC/RAW 解码**：ImageSharp 无法可靠解码 HEIC/RAW，扩展格式由 Magick.NET（`Magick.NET-Q8-AnyCPU` 13.10.0）解码为 JPEG；HEIC 仅支持解码（libheif 无编码器），本应用从不写 HEIC。

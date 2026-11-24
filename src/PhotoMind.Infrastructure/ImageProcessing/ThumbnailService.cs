@@ -3,6 +3,7 @@ using System.Text;
 using Serilog;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
+using PhotoMind.Core.Enums;
 using PhotoMind.Core.Interfaces;
 
 namespace PhotoMind.Infrastructure.ImageProcessing;
@@ -14,14 +15,16 @@ namespace PhotoMind.Infrastructure.ImageProcessing;
 public sealed class ThumbnailService : IThumbnailService
 {
     private readonly IAppPaths _paths;
+    private readonly IImageFormatDetector _detector;
     private readonly int _maxSize;
 
     /// <summary>Bounds simultaneous image decodes so a large scan never floods memory with concurrent Bitmap loads.</summary>
     private static readonly SemaphoreSlim _decodeGate = new(Math.Max(1, Environment.ProcessorCount));
 
-    public ThumbnailService(IAppPaths paths, int maxSize = 256)
+    public ThumbnailService(IAppPaths paths, IImageFormatDetector detector, int maxSize = 256)
     {
         _paths = paths;
+        _detector = detector;
         _maxSize = maxSize;
         Directory.CreateDirectory(paths.ThumbnailDirectory);
     }
@@ -41,6 +44,16 @@ public sealed class ThumbnailService : IThumbnailService
             {
                 try
                 {
+                    var format = DetectFormat(imagePath);
+                    if (format is ImageFormat.Tiff or ImageFormat.Heic or ImageFormat.Raw)
+                    {
+                        // Extended formats are decoded by Magick.NET (ImageSharp cannot read HEIC/RAW
+                        // and only partially supports TIFF variants).
+                        return MagickImageDecoder.TryCreateJpeg(imagePath, target, _maxSize, 80)
+                            ? (string?)target
+                            : null;
+                    }
+
                     using var image = Image.Load(imagePath);
                     image.Mutate(x => x.AutoOrient().Resize(new ResizeOptions
                     {
@@ -74,6 +87,21 @@ public sealed class ThumbnailService : IThumbnailService
         catch
         {
             // Best-effort cache invalidation only; a failed delete must never surface to the user.
+        }
+    }
+
+    private ImageFormat DetectFormat(string imagePath)
+    {
+        try
+        {
+            using var fs = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 16);
+            Span<byte> buffer = stackalloc byte[16];
+            var read = fs.Read(buffer);
+            return _detector.Detect(buffer[..read]);
+        }
+        catch
+        {
+            return ImageFormat.Unknown;
         }
     }
 

@@ -16,14 +16,22 @@ public sealed class ImageMetadataReader : IImageMetadataReader
         {
             try
             {
+                // HEIC and RAW are decoded by Magick.NET; ImageSharp cannot read them.
+                if (format is ImageFormat.Heic or ImageFormat.Raw)
+                {
+                    if (!MagickImageDecoder.TryIdentify(filePath, out var width, out var height, out var exifDate))
+                        throw new ImageReadException("无法识别图片格式或内容", filePath);
+                    return new ImageMetadata(width, height, exifDate);
+                }
+
                 var info = Image.Identify(filePath);
                 if (info is null)
                     throw new ImageReadException("无法识别图片格式或内容", filePath);
 
-                int width = info.Width;
-                int height = info.Height;
+                int w = info.Width;
+                int h = info.Height;
 
-                DateTime? exifDate = null;
+                DateTime? date = null;
                 var exif = info.Metadata.ExifProfile;
                 if (exif is not null)
                 {
@@ -32,7 +40,7 @@ public sealed class ImageMetadataReader : IImageMetadataReader
                         && orientationValue?.Value is ushort orientation
                         && orientation is >= 5 and <= 8)
                     {
-                        (width, height) = (height, width);
+                        (w, h) = (h, w);
                     }
 
                     string? raw = null;
@@ -52,11 +60,11 @@ public sealed class ImageMetadataReader : IImageMetadataReader
                         && DateTime.TryParseExact(raw, "yyyy:MM:dd HH:mm:ss",
                             CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
                     {
-                        exifDate = DateTime.SpecifyKind(parsed, DateTimeKind.Unspecified);
+                        date = DateTime.SpecifyKind(parsed, DateTimeKind.Unspecified);
                     }
                 }
 
-                return new ImageMetadata(width, height, exifDate);
+                return new ImageMetadata(w, h, date);
             }
             catch (ImageReadException)
             {

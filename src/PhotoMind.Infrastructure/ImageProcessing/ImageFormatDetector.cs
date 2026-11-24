@@ -43,11 +43,32 @@ public sealed class ImageFormatDetector : IImageFormatDetector
             && (h[4] == '7' || h[4] == '9') && h[5] == 'a')
             return ImageFormat.Gif;
 
-        // TIFF (also covers TIFF-based RAW such as CR2/NEF/DNG): II*\0 or MM\0*
+        // RAW with a distinct header: Fuji RAF "FUJIFILM", Olympus ORF "IIRO"/"MMOR", Panasonic RW2 "IIU\0"
+        if (h.Length >= 8 && h[0] == 'F' && h[1] == 'U' && h[2] == 'J' && h[3] == 'I'
+            && h[4] == 'F' && h[5] == 'I' && h[6] == 'L' && h[7] == 'M')
+            return ImageFormat.Raw;
         if (h.Length >= 4
+            && ((h[0] == 'I' && h[1] == 'I' && h[2] == 'R' && h[3] == 'O')
+                || (h[0] == 'M' && h[1] == 'M' && h[2] == 'O' && h[3] == 'R')
+                || (h[0] == 'I' && h[1] == 'I' && h[2] == 'U' && h[3] == 0x00)))
+            return ImageFormat.Raw;
+
+        // TIFF (II*\0 or MM\0*). TIFF-based RAW (CR2/NEF/ARW/DNG) share the byte-order marker but carry a
+        // camera signature at offset 8, so they are classified as Raw instead of Tiff.
+        var isTiffMarker = h.Length >= 4
             && ((h[0] == 0x49 && h[1] == 0x49 && h[2] == 0x2A && h[3] == 0x00)
-                || (h[0] == 0x4D && h[1] == 0x4D && h[2] == 0x00 && h[3] == 0x2A)))
+                || (h[0] == 0x4D && h[1] == 0x4D && h[2] == 0x00 && h[3] == 0x2A));
+        if (isTiffMarker)
+        {
+            if (h.Length >= 12
+                && ((h[8] == 'C' && h[9] == 'R')
+                    || (h[8] == 'N' && h[9] == 'E' && h[10] == 'F')
+                    || (h[8] == 'S' && h[9] == 'o' && h[10] == 'n' && h[11] == 'y')
+                    || (h[8] == 'D' && h[9] == 'N' && h[10] == 'G')))
+                return ImageFormat.Raw;
+
             return ImageFormat.Tiff;
+        }
 
         // HEIC/HEIF (ISO BMFF): bytes 4-7 == "ftyp"
         if (h.Length >= 12 && h[4] == 'f' && h[5] == 't' && h[6] == 'y' && h[7] == 'p')
@@ -57,5 +78,6 @@ public sealed class ImageFormatDetector : IImageFormatDetector
     }
 
     public bool IsSupported(ImageFormat format) => format is
-        ImageFormat.Jpeg or ImageFormat.Png or ImageFormat.WebP or ImageFormat.Bmp or ImageFormat.Gif;
+        ImageFormat.Jpeg or ImageFormat.Png or ImageFormat.WebP or ImageFormat.Bmp or ImageFormat.Gif
+        or ImageFormat.Tiff or ImageFormat.Heic or ImageFormat.Raw;
 }

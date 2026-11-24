@@ -34,7 +34,15 @@ logs/
 .tools/*.zip
 .tools/*.log
 .tools/*.txt
+.tools/*.exe
 .tools/probe-*.ps1
+.tools/inno-setup/
+.tools/dotnet-ef/
+*.heic
+
+# Installer output (built binaries — source .iss is committed)
+installer/output/
+.install-test/
 
 # Generated test images (regenerable via .tools/gen-test-images.py)
 TestData/

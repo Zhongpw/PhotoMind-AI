@@ -2,6 +2,23 @@
 
 本文件记录 PhotoMind AI 各开发阶段的变更。
 
+## [0.7.0] — Phase 7：增强（单测 / 迁移 / 扩展格式 / 正式安装包）
+
+**新增功能**
+
+- 单元测试（`PhotoMind.Tests` 89 例 + `PhotoMind.App.Tests` 11 例 = 100 例）：覆盖魔数格式检测（含 RAW）、路径安全、文件冲突递增、SHA-256、AI 响应解析、DeepSeek 异常重试分类、AI 配置钳制、暂停令牌、DeepSeek 契约序列化/反序列化、设置页 ViewModel、分类页 ViewModel。测试项目手动接入解决方案（`dotnet sln add` 会触发 MSBuild workload 解析问题）。
+- EF Core 迁移（`InitialCreate` 迁移 + `AppDbContextModelSnapshot` + `DesignTimeDbContextFactory`）：启动时 `MigrateAsync` 自动建库/升级（替代 `EnsureCreatedAsync`），数据库结构纳入版本管理。
+- TIFF / HEIC / RAW 完整本地解码（`Magick.NET-Q8-AnyCPU` 13.10.0 + `MagickImageDecoder`）：格式检测新增 RAW（RAF/ORF/RW2/CR2/NEF/ARW/DNG），元数据读取、缩略图与 AI 预览统一本地转 JPEG（HEIC 仅解码，符合"只读原图"原则）。
+- 正式安装包（`installer/PhotoMindAI.iss`，Inno Setup 6.7.4，`PrivilegesRequired=lowest` 免管理员）：`ISCC` 编译出 `PhotoMindAI-Setup-1.0.0.exe`（51.6 MB，自包含、含中文语言、开始菜单/桌面快捷方式、卸载程序）。
+- MSBuild workload 解析根因修复：本机 SDK 缺 `WorkloadAutoImportPropsLocator` 的 `AutoImport.props/targets` → 补建 + `DisableWorkloadResolver.sentinel`，此后所有 `dotnet`/`msbuild`/`dotnet-ef` 命令不再需要 `-p:MSBuildEnableWorkloadResolver=false`。
+
+**验证**
+
+- 全量离线编译通过（Release，5 项目，EXIT=0，仅良性 NU1603 版本解析警告）。
+- 单元测试 100/100 通过（PhotoMind.Tests 89/89 + PhotoMind.App.Tests 11/11）。
+- TIFF/HEIC/RAW 冒烟验证通过（18/18：检测、IsSupported、RAW 头、元数据、缩略图、AI 预览）。
+- 安装包安装测试通过（测试版 `PhotoMindAI-Setup-Test.exe`：INSTALL_EXIT=0、493 文件、安装后应用启动正常、SQLite 迁移 + 分类种子自动写入）。
+
 ## [0.6.0] — Phase 6：最终发布
 
 **新增功能**

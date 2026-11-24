@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -10,6 +10,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhotoMind.Infrastructure", "src\PhotoMind.Infrastructure\PhotoMind.Infrastructure.csproj", "{F0107B70-7C28-4191-ADAD-EA03F91337E1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhotoMind.App", "src\PhotoMind.App\PhotoMind.App.csproj", "{9D72423E-B5AA-412B-AD8E-6712DA9D8FCB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhotoMind.Tests", "src\PhotoMind.Tests\PhotoMind.Tests.csproj", "{A0B1C2D3-4E5F-6789-ABCD-EF0123456789}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhotoMind.App.Tests", "src\PhotoMind.App.Tests\PhotoMind.App.Tests.csproj", "{B1C2D3E4-5F6A-7890-BCDE-F01234567890}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,10 +36,20 @@ Global
 		{9D72423E-B5AA-412B-AD8E-6712DA9D8FCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9D72423E-B5AA-412B-AD8E-6712DA9D8FCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9D72423E-B5AA-412B-AD8E-6712DA9D8FCB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0B1C2D3-4E5F-6789-ABCD-EF0123456789}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0B1C2D3-4E5F-6789-ABCD-EF0123456789}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0B1C2D3-4E5F-6789-ABCD-EF0123456789}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0B1C2D3-4E5F-6789-ABCD-EF0123456789}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1C2D3E4-5F6A-7890-BCDE-F01234567890}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1C2D3E4-5F6A-7890-BCDE-F01234567890}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1C2D3E4-5F6A-7890-BCDE-F01234567890}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1C2D3E4-5F6A-7890-BCDE-F01234567890}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{6733A12D-2323-447E-A134-379F21E36386} = {D9D278DF-1D51-49C2-8144-38DF99A2E167}
 		{F0107B70-7C28-4191-ADAD-EA03F91337E1} = {D9D278DF-1D51-49C2-8144-38DF99A2E167}
 		{9D72423E-B5AA-412B-AD8E-6712DA9D8FCB} = {D9D278DF-1D51-49C2-8144-38DF99A2E167}
+		{A0B1C2D3-4E5F-6789-ABCD-EF0123456789} = {D9D278DF-1D51-49C2-8144-38DF99A2E167}
+		{B1C2D3E4-5F6A-7890-BCDE-F01234567890} = {D9D278DF-1D51-49C2-8144-38DF99A2E167}
 	EndGlobalSection
 EndGlobal
