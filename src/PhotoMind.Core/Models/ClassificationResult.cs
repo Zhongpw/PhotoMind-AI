@@ -29,6 +29,12 @@ public sealed class ClassificationResult
     /// <summary>Which engine produced this result (DeepSeek API or local CLIP).</summary>
     public ClassificationSource Source { get; set; } = ClassificationSource.DeepSeek;
 
+    /// <summary>Number of CLIP candidate categories offered to DeepSeek (null = candidate screening off).</summary>
+    public int? CandidateCount { get; set; }
+
+    /// <summary>Whether DeepSeek's final top-level category was among the CLIP candidate branches (null = screening off).</summary>
+    public bool? CandidateHit { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

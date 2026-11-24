@@ -22,6 +22,7 @@ public sealed partial class HistoryViewModel : ObservableObject
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string? _statusText;
     [ObservableProperty] private string _usageText = "—";
+    [ObservableProperty] private string _candidateStatsText = "—";
     [ObservableProperty] private string _duplicateCountText = "—";
 
     public HistoryViewModel(
@@ -49,6 +50,7 @@ public sealed partial class HistoryViewModel : ObservableObject
             var organizeTasks = await _organizeRepository.GetRecentOrganizeTasksAsync(20).ConfigureAwait(false);
             var duplicateGroups = await _scanRepository.GetDuplicateGroupsAsync().ConfigureAwait(false);
             var usage = await _classificationRepository.GetUsageSummaryAsync().ConfigureAwait(false);
+            var candidateStats = await _classificationRepository.GetCandidateStatsAsync().ConfigureAwait(false);
 
             var rows = new List<TaskHistoryRow>(scanTasks.Count + classificationTasks.Count + organizeTasks.Count);
             foreach (var t in scanTasks) rows.Add(TaskHistoryRow.Scan(t));
@@ -66,6 +68,11 @@ public sealed partial class HistoryViewModel : ObservableObject
                 ? "暂无 API 调用记录"
                 : $"请求 {usage.RequestCount} 次 · Token 输入 {usage.InputTokens:N0} / 输出 {usage.OutputTokens:N0} / 总计 {usage.TotalTokens:N0}"
                   + (usage.EstimatedCount > 0 ? $" · 其中 {usage.EstimatedCount} 次为估算值" : "");
+
+            CandidateStatsText = candidateStats.ScreenedCount == 0
+                ? "暂无 CLIP 候选筛选记录"
+                : $"CLIP 候选筛选 {candidateStats.ScreenedCount} 张 · 平均候选 {candidateStats.AverageCandidateCount:N1} 个 · 命中 {candidateStats.HitCount}/{candidateStats.ScreenedCount}"
+                  + (candidateStats.MissCount > 0 ? $" · 候选外 {candidateStats.MissCount} 张" : "");
 
             DuplicateCountText = Duplicates.Count == 0
                 ? "未发现重复图片"

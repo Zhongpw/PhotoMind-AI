@@ -253,6 +253,41 @@ public sealed class ClipModelService : IClipModelService
         };
     }
 
+    public async Task<IReadOnlyList<ClipCandidate>> GetTopKCandidatesAsync(
+        float[] imageEmbedding,
+        IReadOnlyList<Category> categories,
+        int topK,
+        CancellationToken ct = default)
+    {
+        await EnsureLoadedAsync(ct).ConfigureAwait(false);
+
+        if (categories.Count == 0)
+            return Array.Empty<ClipCandidate>();
+
+        // Rank every category (top-level and sub-category) by raw cosine similarity to the image.
+        // This is a screening signal for DeepSeek, not a calibrated probability.
+        var byId = categories.ToDictionary(c => c.Id);
+        var scored = new List<ClipCandidate>(categories.Count);
+        foreach (var category in categories)
+        {
+            var embedding = await GetCategoryEmbeddingAsync(category, ct).ConfigureAwait(false);
+            var parent = category.ParentId is long pid && byId.TryGetValue(pid, out var p) ? p : null;
+            scored.Add(new ClipCandidate
+            {
+                CategoryId = category.Id,
+                Name = category.Name,
+                ParentId = category.ParentId,
+                ParentName = parent?.Name,
+                Similarity = Dot(imageEmbedding, embedding),
+            });
+        }
+
+        var ordered = scored.OrderByDescending(c => c.Similarity).ToList();
+        if (topK > 0 && topK < ordered.Count)
+            ordered = ordered.Take(topK).ToList();
+        return ordered;
+    }
+
     private async Task<float[]> GetCategoryEmbeddingAsync(Category category, CancellationToken ct)
     {
         var prompts = GetPrompts(category);

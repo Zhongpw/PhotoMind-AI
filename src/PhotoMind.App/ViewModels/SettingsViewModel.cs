@@ -27,6 +27,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private int _previewQuality = AiConstants.DefaultPreviewQuality;
     [ObservableProperty] private bool _saveTokenMode;
     [ObservableProperty] private bool _gpuAcceleration;
+    [ObservableProperty] private bool _clipCandidateFiltering;
+    [ObservableProperty] private int _clipTopK = AiConstants.DefaultClipTopK;
 
     [ObservableProperty] private string _clipDeviceText = "CLIP 模型未加载（首次分类时自动加载）";
     [ObservableProperty] private bool _isCheckingGpu;
@@ -53,6 +55,14 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public IReadOnlyList<int> PreviewQualityOptions { get; } = new[] { 60, 70, 75, 80, 85, 90, 95 };
 
+    public IReadOnlyList<TopKOption> TopKOptions { get; } = new[]
+    {
+        new TopKOption(3, "3 个候选"),
+        new TopKOption(5, "5 个候选（默认）"),
+        new TopKOption(8, "8 个候选"),
+        new TopKOption(0, "全部类别"),
+    };
+
     public SettingsViewModel(ISecretStore secretStore, IAiConfigStore configStore, IDeepSeekClient client, IClipModelService clipModel)
     {
         _secretStore = secretStore;
@@ -77,6 +87,8 @@ public sealed partial class SettingsViewModel : ObservableObject
             PreviewQuality = config.PreviewQuality;
             SaveTokenMode = config.SaveTokenMode;
             GpuAcceleration = config.GpuAcceleration;
+            ClipCandidateFiltering = config.ClipCandidateFiltering;
+            ClipTopK = config.ClipTopK;
             RefreshClipStatus();
         }
         catch (Exception ex)
@@ -124,6 +136,8 @@ public sealed partial class SettingsViewModel : ObservableObject
             PreviewQuality = PreviewQuality,
             SaveTokenMode = SaveTokenMode,
             GpuAcceleration = GpuAcceleration,
+            ClipCandidateFiltering = ClipCandidateFiltering,
+            ClipTopK = ClipTopK,
         };
     }
 
@@ -275,6 +289,20 @@ public sealed class DetailOption
     }
 
     public AiDetailLevel Value { get; }
+    public string Label { get; }
+    public override string ToString() => Label;
+}
+
+/// <summary>ComboBox item for the CLIP candidate Top-K (0 = all categories).</summary>
+public sealed class TopKOption
+{
+    public TopKOption(int value, string label)
+    {
+        Value = value;
+        Label = label;
+    }
+
+    public int Value { get; }
     public string Label { get; }
     public override string ToString() => Label;
 }

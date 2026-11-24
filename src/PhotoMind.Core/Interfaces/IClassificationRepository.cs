@@ -43,4 +43,7 @@ public interface IClassificationRepository
 
     /// <summary>Aggregated API usage (request count, tokens, estimated cost).</summary>
     Task<ApiUsageSummary> GetUsageSummaryAsync(CancellationToken ct = default);
+
+    /// <summary>Aggregated CLIP candidate-screening statistics (screened count, candidate hit rate).</summary>
+    Task<CandidateStatsSummary> GetCandidateStatsAsync(CancellationToken ct = default);
 }

@@ -94,10 +94,10 @@ public sealed class ClassificationService : IClassificationService
 
         Report(progress, task.Id, TaskState.Running, task.TotalCount, 0, 0, null, null);
 
-        // Stage C: warm up the local CLIP text cache once so the first images classify fast. If the
-        // model cannot load (missing files, no runtime), disable CLIP routing for this task and fall
-        // back to DeepSeek for every image.
-        var clipAvailable = config.SaveTokenMode;
+        // Warm up the local CLIP text cache once so the first images classify fast. Needed for either
+        // direct-acceptance routing (SaveTokenMode) or candidate screening (ClipCandidateFiltering). If
+        // the model cannot load, disable CLIP for this task and fall back to DeepSeek for every image.
+        var clipAvailable = config.SaveTokenMode || config.ClipCandidateFiltering;
         if (clipAvailable)
         {
             try
@@ -182,9 +182,26 @@ public sealed class ClassificationService : IClassificationService
         AiPreview? preview = null;
         try
         {
-            // Stage C: token-saving routing. When enabled, try local CLIP first; accept the result
-            // only when its softmax confidence meets the threshold, otherwise fall through to DeepSeek.
-            if (clipAvailable && await TryClassifyWithClipAsync(image, config, categories, ct).ConfigureAwait(false))
+            // Encode the image once and reuse the embedding for both direct-acceptance routing and
+            // candidate screening. A null embedding means CLIP is unavailable for this image and
+            // DeepSeek handles it with the full category list.
+            float[]? clipEmbedding = null;
+            if (clipAvailable)
+            {
+                try
+                {
+                    clipEmbedding = await _clipModel.EncodeImageAsync(image.OriginalPath, ct).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _logger.Warning(ex, "图片 {ImageId} CLIP 编码失败，回退 DeepSeek", image.Id);
+                    clipEmbedding = null;
+                }
+            }
+
+            // Direct-acceptance routing (SaveTokenMode): persist locally when CLIP confidence is high.
+            if (config.SaveTokenMode && clipEmbedding != null
+                && await TryClassifyWithClipAsync(image, config, categories, clipEmbedding, ct).ConfigureAwait(false))
                 return true;
 
             preview = await _normalizer.CreatePreviewAsync(image.OriginalPath, config, ct).ConfigureAwait(false);
@@ -192,10 +209,25 @@ public sealed class ClassificationService : IClassificationService
             var bytes = await File.ReadAllBytesAsync(preview.TempFilePath, ct).ConfigureAwait(false);
             var dataUrl = $"data:{preview.MimeType};base64,{Convert.ToBase64String(bytes)}";
 
+            // Candidate screening (ClipCandidateFiltering): narrow the category list sent to DeepSeek.
+            IReadOnlyList<ClipCandidate>? candidates = null;
+            if (config.ClipCandidateFiltering && clipEmbedding != null)
+            {
+                try
+                {
+                    candidates = await _clipModel.GetTopKCandidatesAsync(clipEmbedding, categories, config.ClipTopK, ct).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _logger.Warning(ex, "图片 {ImageId} CLIP 候选筛选失败，回退完整分类体系", image.Id);
+                    candidates = null;
+                }
+            }
+
             var request = new DeepSeekRequest
             {
                 Model = config.Model,
-                Messages = PromptBuilder.BuildMessages(dataUrl, mode, categories, config.Detail),
+                Messages = PromptBuilder.BuildMessages(dataUrl, mode, categories, config.Detail, candidates),
             };
 
             var response = await _requestManager.SendWithRetryAsync(config.BaseUrl, apiKey, request, config.MaxRetries, ct).ConfigureAwait(false);
@@ -219,6 +251,8 @@ public sealed class ClassificationService : IClassificationService
                 NeedsReview = needsReview,
                 ModelName = config.Model,
                 PromptVersion = PromptBuilder.PromptVersion,
+                CandidateCount = candidates?.Count,
+                CandidateHit = candidates is null ? null : ComputeCandidateHit(candidates, categoryId),
             };
 
             await _repo.SaveResultAsync(result, ct).ConfigureAwait(false);
@@ -242,19 +276,19 @@ public sealed class ClassificationService : IClassificationService
     }
 
     /// <summary>
-    /// Attempts a local CLIP classification. Returns true (and persists the result) only when the
-    /// winning category's softmax confidence meets the threshold; returns false to fall back to DeepSeek.
-    /// Any CLIP failure is swallowed here and reported as a fall-back to DeepSeek.
+    /// Attempts a local CLIP classification from an already-computed image embedding. Returns true (and
+    /// persists the result) only when the winning category's confidence meets the threshold; returns
+    /// false to fall back to DeepSeek. Any CLIP failure is swallowed here and reported as a fall-back.
     /// </summary>
     private async Task<bool> TryClassifyWithClipAsync(
         Image image,
         AiConfig config,
         IReadOnlyList<Category> categories,
+        float[] embedding,
         CancellationToken ct)
     {
         try
         {
-            var embedding = await _clipModel.EncodeImageAsync(image.OriginalPath, ct).ConfigureAwait(false);
             var match = await _clipModel.MatchAsync(embedding, categories, config.ClipTemperature, ct).ConfigureAwait(false);
 
             if (match.CategoryId is not long categoryId)
@@ -349,6 +383,23 @@ public sealed class ClassificationService : IClassificationService
         }
 
         return (categoryId, subCategoryId, needsReview);
+    }
+
+    /// <summary>
+    /// True when DeepSeek's final top-level category is represented by at least one CLIP candidate
+    /// branch (a candidate is the top-level itself, or a sub-category whose parent is that top-level).
+    /// </summary>
+    private static bool ComputeCandidateHit(IReadOnlyList<ClipCandidate> candidates, long? categoryId)
+    {
+        if (categoryId is not long cid)
+            return false;
+        foreach (var c in candidates)
+        {
+            var branch = c.ParentId ?? c.CategoryId;
+            if (branch == cid)
+                return true;
+        }
+        return false;
     }
 
     private async Task RecordUsageAsync(long taskId, DeepSeekUsage? usage, string modelName, int dataUrlLength, CancellationToken ct)

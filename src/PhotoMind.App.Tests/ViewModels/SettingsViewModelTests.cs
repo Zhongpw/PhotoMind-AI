@@ -78,6 +78,8 @@ public class SettingsViewModelTests
         vm.PreviewQuality = 90;
         vm.SaveTokenMode = true;
         vm.GpuAcceleration = true;
+        vm.ClipCandidateFiltering = true;
+        vm.ClipTopK = 8;
 
         await vm.SaveConfigCommand.ExecuteAsync(null);
 
@@ -92,7 +94,9 @@ public class SettingsViewModelTests
                 cfg.MaxPreviewDimension == 1536 &&
                 cfg.PreviewQuality == 90 &&
                 cfg.SaveTokenMode &&
-                cfg.GpuAcceleration),
+                cfg.GpuAcceleration &&
+                cfg.ClipCandidateFiltering &&
+                cfg.ClipTopK == 8),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -104,6 +108,28 @@ public class SettingsViewModelTests
 
         Assert.True(vm.SaveTokenMode);
         Assert.True(vm.GpuAcceleration);
+    }
+
+    [Fact]
+    public async Task Initialize_LoadsCandidateFilteringFromConfig()
+    {
+        var vm = CreateVm(new AiConfig { ClipCandidateFiltering = true, ClipTopK = 8 });
+        await Task.Delay(50); // let the fire-and-forget InitializeAsync complete
+
+        Assert.True(vm.ClipCandidateFiltering);
+        Assert.Equal(8, vm.ClipTopK);
+    }
+
+    [Fact]
+    public void TopKOptions_IncludeAllAndDefault()
+    {
+        var vm = CreateVm();
+
+        Assert.Contains(vm.TopKOptions, o => o.Value == 0);
+        Assert.Contains(vm.TopKOptions, o => o.Value == 3);
+        Assert.Contains(vm.TopKOptions, o => o.Value == 5);
+        Assert.Contains(vm.TopKOptions, o => o.Value == 8);
+        Assert.Equal(AiConstants.DefaultClipTopK, vm.ClipTopK);
     }
 
     [Fact]

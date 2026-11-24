@@ -110,6 +110,12 @@ namespace PhotoMind.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("CandidateCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool?>("CandidateHit")
+                        .HasColumnType("INTEGER");
+
                     b.Property<long?>("CategoryId")
                         .HasColumnType("INTEGER");
 

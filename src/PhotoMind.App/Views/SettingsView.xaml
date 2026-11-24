@@ -128,6 +128,18 @@
                     <CheckBox IsChecked="{Binding GpuAcceleration}" VerticalAlignment="Center" Margin="0,10,0,0"
                               Content="GPU 加速：使用 NVIDIA CUDA 推理，不可用时自动回退 CPU" />
 
+                    <Border Height="1" Background="#22000000" Margin="0,16,0,12" />
+
+                    <CheckBox IsChecked="{Binding ClipCandidateFiltering}" VerticalAlignment="Center"
+                              Content="CLIP 候选类别筛选：本地筛出候选类别，缩小 DeepSeek 判断范围（最终分类仍由 DeepSeek 完成）" />
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <TextBlock Text="候选数量 Top-K" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <ComboBox ItemsSource="{Binding TopKOptions}" DisplayMemberPath="Label" SelectedValuePath="Value"
+                                  SelectedValue="{Binding ClipTopK}" Width="160" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Text="与「省 Token 直接采信」相互独立：候选筛选始终交由 DeepSeek 最终判断，DeepSeek 可独立观察图片、并在候选不合适时选择完整分类体系中的其他类别。"
+                               Style="{StaticResource SecondaryText}" Margin="0,6,0,0" TextWrapping="Wrap" />
+
                     <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
                         <Button Content="🔍 检测设备" Style="{StaticResource SecondaryButton}"
                                 Command="{Binding CheckGpuCommand}"

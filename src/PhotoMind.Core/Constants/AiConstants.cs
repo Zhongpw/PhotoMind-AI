@@ -43,6 +43,9 @@ public static class AiConstants
     /// <summary>Logistic-calibration intercept (see <see cref="DefaultClipCalibrationSlope"/>).</summary>
     public const double DefaultClipCalibrationIntercept = 0;
 
+    /// <summary>Default number of top-K CLIP candidate categories offered to DeepSeek (0 = all categories).</summary>
+    public const int DefaultClipTopK = 5;
+
     /// <summary>CLIP input image size (ViT-B/32 uses 224x224).</summary>
     public const int ClipImageSize = 224;
 

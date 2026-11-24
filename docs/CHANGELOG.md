@@ -2,6 +2,21 @@
 
 本文件记录 PhotoMind AI 各开发阶段的变更。
 
+## [0.11.0] — 增量任务 05：CLIP 本地粗筛 + DeepSeek 协同分类
+
+**新增功能**
+
+- CLIP 候选类别筛选（`ClipModelService.GetTopKCandidatesAsync`）：对图片与**全部 26 个类别（顶级+子类）**的原始余弦相似度扁平排序取 Top-K（默认 5，可配 3/5/8/全部），候选全部来自数据库、不硬编码；`ClipCandidate` 记录类别/父分支/相似度。
+- DeepSeek 协同提示词（`PromptBuilder`）：候选非空时在系统提示词前置"本地图像模型已初步筛选的候选分类（按相似度降序，仅供参考，不要盲从）"并保留完整顶级分类体系作兜底——**DeepSeek 仍独立观察原始图片、可越出候选、绝不因 CLIP 排名错误而被限制在错误类别**。
+- 双开关分离：设置页「本地 CLIP 识别」卡片新增「CLIP 候选类别筛选」开关 + Top-K 选择（3/5/8/全部），与「省 Token 直接采信（0.8 阈值）」相互独立；`AiConfig.ClipCandidateFiltering`/`ClipTopK` + `AiConstants.DefaultClipTopK=5` + `Sanitized` 收敛（clamp 0..100）。
+- 候选追踪统计：`ClassificationResult.CandidateCount`/`CandidateHit`（null=未启用）+ `AddCandidateTracking` 迁移 + `GetCandidateStatsAsync` 聚合（筛选张数/平均候选数/命中数/候选外数）；历史页新增候选统计行。图片嵌入一次编码同时供直接采信与候选筛选复用。
+
+**验证（诚实结论）**
+
+- 全量离线编译通过（EXIT=0，5 项目，0 警告 0 错误）；单元测试 **142/142** 通过（PhotoMind.Tests 110/110 + PhotoMind.App.Tests 32/32）。
+- 独立验证集 78 张真实照片（本地 CLIP，不调用 DeepSeek）：**候选命中率 K=3 时 70/78=89.7%、K=5 时 73/78=93.6%、K=8 时 77/78=98.7%、全部时 100%**——正确顶级类别几乎不会被候选筛除（召回高，兜底可靠）。
+- **输入 Token 诚实结论**：因保留完整顶级分类体系作为兜底（满足"DeepSeek 可越出候选"的保护要求），候选提示词相比无候选基线（576 字符≈144 token）**反而更长**（K=3 约 +123 字符、K=5 +143、K=8 +175），输入 Token 并未下降。候选筛选的价值在于子类别精确引导与高召回兜底，**不构成输入 Token 节省**；最终分类准确率/输出 Token/成本/耗时需真实 DeepSeek 调用方可对比，本环境不消耗 API 额度、无法实测，如实说明。
+
 ## [0.10.0] — 增量任务 04：CLIP 置信度校准与省 Token 优化
 
 **新增功能**

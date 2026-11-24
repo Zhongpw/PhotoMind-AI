@@ -37,18 +37,38 @@ public static class PromptBuilder
         string base64DataUrl,
         ClassificationMode mode,
         IReadOnlyList<Category> categories,
-        AiDetailLevel detail)
+        AiDetailLevel detail,
+        IReadOnlyList<ClipCandidate>? candidates = null)
     {
         return new List<DeepSeekMessage>
         {
-            new() { Role = "system", Content = BuildSystemPrompt(mode, categories) },
+            new() { Role = "system", Content = BuildSystemPrompt(mode, categories, candidates) },
             new() { Role = "user", Content = BuildUserContent(base64DataUrl, detail) },
         };
     }
 
-    private static string BuildSystemPrompt(ClassificationMode mode, IReadOnlyList<Category> categories)
+    private static string BuildSystemPrompt(
+        ClassificationMode mode,
+        IReadOnlyList<Category> categories,
+        IReadOnlyList<ClipCandidate>? candidates)
     {
         var sb = new StringBuilder(BaseSystemPrompt);
+
+        // Candidate screening: prepend a ranked hint, but keep DeepSeek free to observe independently
+        // and to choose any category from the full list below (never forced into a wrong branch).
+        if (candidates is { Count: > 0 })
+        {
+            sb.AppendLine();
+            sb.AppendLine("本地图像模型已初步筛选出以下候选分类（按相似度降序，仅供参考，不要盲从）：");
+            var rank = 0;
+            foreach (var c in candidates)
+            {
+                rank++;
+                var path = c.ParentName is null ? c.Name : $"{c.ParentName} > {c.Name}";
+                sb.AppendLine($"{rank}. {path}");
+            }
+            sb.AppendLine("请优先从以上候选分类中选择，但必须独立观察图片后再判断；如果都不合适，可从下方完整分类体系中另选。");
+        }
 
         var topLevel = categories.Where(c => c.ParentId == null).Select(c => c.Name).Distinct().ToList();
         if (topLevel.Count > 0)

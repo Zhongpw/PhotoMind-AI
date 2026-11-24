@@ -48,6 +48,12 @@ public sealed class AiConfig
     /// <summary>Logistic-calibration intercept for CLIP top1/top2 margin.</summary>
     public double ClipCalibrationIntercept { get; set; } = AiConstants.DefaultClipCalibrationIntercept;
 
+    /// <summary>Candidate-screening mode: CLIP narrows the category list sent to DeepSeek (DeepSeek still decides).</summary>
+    public bool ClipCandidateFiltering { get; set; }
+
+    /// <summary>Number of top-K CLIP candidate categories to offer (0 = all categories).</summary>
+    public int ClipTopK { get; set; } = AiConstants.DefaultClipTopK;
+
     /// <summary>Normalizes user input so invalid values never reach the request layer.</summary>
     public AiConfig Sanitized()
     {
@@ -59,6 +65,7 @@ public sealed class AiConfig
         ClipConfidenceThreshold = Math.Clamp(ClipConfidenceThreshold, 0.0, 1.0);
         ClipCalibrationSlope = Math.Clamp(ClipCalibrationSlope, 0.0, 10000.0);
         ClipCalibrationIntercept = Math.Clamp(ClipCalibrationIntercept, -100.0, 100.0);
+        ClipTopK = Math.Clamp(ClipTopK, 0, 100);
         if (string.IsNullOrWhiteSpace(BaseUrl))
             BaseUrl = AiConstants.DefaultBaseUrl;
         if (string.IsNullOrWhiteSpace(Model))

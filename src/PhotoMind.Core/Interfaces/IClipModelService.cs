@@ -50,4 +50,16 @@ public interface IClipModelService
         IReadOnlyList<Category> categories,
         double temperature,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Ranks every category (top-level and sub-category) by raw cosine similarity to the image embedding
+    /// and returns the top-K candidates (or all when <paramref name="topK"/> is 0 or not smaller than the
+    /// category count). Used for candidate screening before DeepSeek; the ranking is a similarity signal,
+    /// never a calibrated probability.
+    /// </summary>
+    Task<IReadOnlyList<ClipCandidate>> GetTopKCandidatesAsync(
+        float[] imageEmbedding,
+        IReadOnlyList<Category> categories,
+        int topK,
+        CancellationToken ct = default);
 }

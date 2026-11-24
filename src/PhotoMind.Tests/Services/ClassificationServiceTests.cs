@@ -54,7 +54,11 @@ public sealed class ClassificationServiceTests : IDisposable
         out Mock<IClipModelService> clip,
         Exception? clipError = null,
         double clipCalibrationSlope = 0,
-        double clipCalibrationIntercept = 0)
+        double clipCalibrationIntercept = 0,
+        bool clipCandidateFiltering = false,
+        int clipTopK = 5,
+        IReadOnlyList<ClipCandidate>? candidates = null,
+        Exception? encodeError = null)
     {
         var categories = new List<Category>
         {
@@ -82,6 +86,8 @@ public sealed class ClassificationServiceTests : IDisposable
         {
             AllowUpload = true,
             SaveTokenMode = saveTokenMode,
+            ClipCandidateFiltering = clipCandidateFiltering,
+            ClipTopK = clipTopK,
             ClipConfidenceThreshold = 0.8,
             ClipTemperature = 0.07,
             ClipCalibrationSlope = clipCalibrationSlope,
@@ -95,7 +101,12 @@ public sealed class ClassificationServiceTests : IDisposable
 
         clip = new Mock<IClipModelService>();
         clip.Setup(c => c.WarmupAsync(It.IsAny<IReadOnlyList<Category>>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-        clip.Setup(c => c.EncodeImageAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(new float[512]);
+        if (encodeError != null)
+            clip.Setup(c => c.EncodeImageAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ThrowsAsync(encodeError);
+        else
+            clip.Setup(c => c.EncodeImageAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(new float[512]);
+        clip.Setup(c => c.GetTopKCandidatesAsync(It.IsAny<float[]>(), It.IsAny<IReadOnlyList<Category>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(candidates ?? new List<ClipCandidate>());
         if (clipError != null)
             clip.Setup(c => c.MatchAsync(It.IsAny<float[]>(), It.IsAny<IReadOnlyList<Category>>(), It.IsAny<double>(), It.IsAny<CancellationToken>())).ThrowsAsync(clipError);
         else if (clipResult != null)
@@ -212,6 +223,74 @@ public sealed class ClassificationServiceTests : IDisposable
         Assert.Equal(TaskState.Completed, task.Status);
         Assert.Equal(1, client.CallCount);
         repo.Verify(r => r.SaveResultAsync(It.Is<ClassificationResult>(x => x.Source == ClassificationSource.DeepSeek), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ClassifyAsync_CandidateFiltering_PassesCandidatesAndSetsHit()
+    {
+        var candidates = new List<ClipCandidate>
+        {
+            new() { CategoryId = 1, Name = "动物", ParentId = null },
+            new() { CategoryId = 11, Name = "猫", ParentId = 1 },
+        };
+        var svc = Build(false, null, out var repo, out var client, out var clip,
+            clipCandidateFiltering: true, clipTopK: 5, candidates: candidates);
+
+        var task = await ClassifyAsync(svc);
+
+        Assert.Equal(TaskState.Completed, task.Status);
+        Assert.Equal(1, client.CallCount);
+        clip.Verify(c => c.GetTopKCandidatesAsync(It.IsAny<float[]>(), It.IsAny<IReadOnlyList<Category>>(), 5, It.IsAny<CancellationToken>()), Times.Once);
+        repo.Verify(r => r.SaveResultAsync(It.Is<ClassificationResult>(x =>
+            x.Source == ClassificationSource.DeepSeek && x.CandidateCount == 2 && x.CandidateHit == true), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ClassifyAsync_CandidateFilteringOff_NoCandidates()
+    {
+        var svc = Build(false, null, out var repo, out var client, out var clip);
+
+        var task = await ClassifyAsync(svc);
+
+        Assert.Equal(TaskState.Completed, task.Status);
+        Assert.Equal(1, client.CallCount);
+        clip.Verify(c => c.GetTopKCandidatesAsync(It.IsAny<float[]>(), It.IsAny<IReadOnlyList<Category>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        repo.Verify(r => r.SaveResultAsync(It.Is<ClassificationResult>(x =>
+            x.CandidateCount == null && x.CandidateHit == null), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ClassifyAsync_CandidateFiltering_ClipEncodeFails_FallsBackToFull()
+    {
+        var svc = Build(false, null, out var repo, out var client, out var clip,
+            clipCandidateFiltering: true, encodeError: new InvalidOperationException("encode boom"));
+
+        var task = await ClassifyAsync(svc);
+
+        Assert.Equal(TaskState.Completed, task.Status);
+        Assert.Equal(1, client.CallCount);
+        clip.Verify(c => c.GetTopKCandidatesAsync(It.IsAny<float[]>(), It.IsAny<IReadOnlyList<Category>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        repo.Verify(r => r.SaveResultAsync(It.Is<ClassificationResult>(x =>
+            x.CandidateCount == null && x.CandidateHit == null), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ClassifyAsync_CandidateFiltering_Miss_SetsHitFalse()
+    {
+        // Candidates only cover a different branch (美食), so DeepSeek's final answer (动物) is outside.
+        var candidates = new List<ClipCandidate>
+        {
+            new() { CategoryId = 2, Name = "美食", ParentId = null },
+        };
+        var svc = Build(false, null, out var repo, out var client, out var clip,
+            clipCandidateFiltering: true, clipTopK: 5, candidates: candidates);
+
+        var task = await ClassifyAsync(svc);
+
+        Assert.Equal(TaskState.Completed, task.Status);
+        Assert.Equal(1, client.CallCount);
+        repo.Verify(r => r.SaveResultAsync(It.Is<ClassificationResult>(x =>
+            x.CandidateCount == 1 && x.CandidateHit == false), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private sealed class FakeDeepSeekClient : IDeepSeekClient

@@ -262,6 +262,27 @@ public sealed class ClassificationRepository : IClassificationRepository
         };
     }
 
+    public async Task<CandidateStatsSummary> GetCandidateStatsAsync(CancellationToken ct = default)
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+
+        var screened = await db.ClassificationResults.AsNoTracking()
+            .Where(r => r.CandidateCount != null)
+            .Select(r => new { r.CandidateCount, r.CandidateHit })
+            .ToListAsync(ct).ConfigureAwait(false);
+
+        if (screened.Count == 0)
+            return new CandidateStatsSummary();
+
+        return new CandidateStatsSummary
+        {
+            ScreenedCount = screened.Count,
+            AverageCandidateCount = screened.Average(r => (double)(r.CandidateCount ?? 0)),
+            HitCount = screened.Count(r => r.CandidateHit == true),
+            MissCount = screened.Count(r => r.CandidateHit == false),
+        };
+    }
+
     private static ClassificationResultSummary ToSummary(ClassificationResult r, Image img, IReadOnlyDictionary<long, Category> categories)
     {
         return new ClassificationResultSummary
