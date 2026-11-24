@@ -37,6 +37,11 @@ public sealed class SecretStore : ISecretStore
         {
             return Task.FromResult<string?>(null);
         }
+        catch (FormatException)
+        {
+            // The stored value is not valid base64 (corrupt secrets file). Treat as "cannot decrypt".
+            return Task.FromResult<string?>(null);
+        }
     }
 
     public Task DeleteSecretAsync(string key, CancellationToken ct = default)
