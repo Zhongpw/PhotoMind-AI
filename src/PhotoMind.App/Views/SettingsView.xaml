@@ -60,7 +60,7 @@
             </Border>
 
             <!-- ============ AI 分类配置 ============ -->
-            <Border Style="{StaticResource Card}">
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
                 <StackPanel>
                     <TextBlock Text="AI 分类配置" Style="{StaticResource PageTitle}" Margin="0,0,0,16" />
 
@@ -114,6 +114,26 @@
 
                     <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
                         <Button Content="💾 保存配置" Command="{Binding SaveConfigCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ 本地 CLIP 识别（省 Token） ============ -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="本地 CLIP 识别（省 Token）" Style="{StaticResource PageTitle}" Margin="0,0,0,16" />
+
+                    <CheckBox IsChecked="{Binding SaveTokenMode}" VerticalAlignment="Center"
+                              Content="启用省 Token 模式：先用本地 CLIP 识别，高置信度时不调用 DeepSeek API（置信度不足或失败会自动回退 DeepSeek）" />
+                    <CheckBox IsChecked="{Binding GpuAcceleration}" VerticalAlignment="Center" Margin="0,10,0,0"
+                              Content="GPU 加速：使用 NVIDIA CUDA 推理，不可用时自动回退 CPU" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                        <Button Content="🔍 检测设备" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding CheckGpuCommand}"
+                                IsEnabled="{Binding IsCheckingGpu, Converter={StaticResource InverseBool}}" />
+                        <TextBlock Text="{Binding ClipDeviceText}" VerticalAlignment="Center" Margin="12,0,0,0"
+                                   Style="{StaticResource SecondaryText}" TextWrapping="Wrap" MaxWidth="520" />
                     </StackPanel>
                 </StackPanel>
             </Border>

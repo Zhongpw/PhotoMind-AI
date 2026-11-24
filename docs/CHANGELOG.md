@@ -2,6 +2,24 @@
 
 本文件记录 PhotoMind AI 各开发阶段的变更。
 
+## [0.9.0] — 增量任务 03：本地 CLIP 识别 + 省 Token + GPU 加速
+
+**新增功能**
+
+- 本地 CLIP 图像识别（`ClipModelService`，ONNX Runtime 1.32.0 + `Xenova/clip-vit-base-patch32`）：CPU 推理，零外部 API 调用。图像编码 224×224 → 512 维嵌入、文本编码 77 token → 512 维嵌入、两级分层匹配（先顶级再子类），CLIP 文本嵌入带 `clip-text-cache.json` 持久化缓存。模型文件独立存放于 `<数据目录>/models/clip/`，不进 Git。
+- 省 Token 分流（`ClassificationService`）：开启「省 Token 模式」后，每张图片先用本地 CLIP 匹配，置信度 ≥ 阈值（默认 0.8，可配置）直接采信并写 `ClassificationSource.Clip`、**不调用 DeepSeek、不写 ApiUsage**；低置信度或 CLIP 失败自动回退 DeepSeek（`Source.DeepSeek`），分类结果与审核界面无缝兼容。
+- GPU 加速开关（NVIDIA CUDA）：`SessionOptions.AppendExecutionProvider_CUDA(0)`，无 GPU/缺 cuDNN 时自动降级回 CPU（`Degraded=true` + 中文回退原因），单一 GPU 版 ONNX Runtime 二进制同时支持 CPU/CUDA，做成真正的运行时可切换开关（非结构性空操作）。
+- 设置页 UI（`SettingsView`）：新增「本地 CLIP 识别（省 Token）」卡片，两个独立开关（省 Token 模式 / GPU 加速）+「检测设备」按钮 + 实时设备状态显示（CPU / NVIDIA CUDA / 回退原因 / 加载失败原因）。
+- 分类类别英文别名（`Category.Alias` + `AddClipFields` 迁移 + 种子 26 类全部加英文别名），CLIP 用英文 prompt（`a photo of {alias}`）匹配，识别率远优于中文。
+- 模型来源/版本/许可证/SHA-256 记录（见 `docs/THIRD_PARTY_NOTICES.md`）。
+
+**验证**
+
+- 全量离线编译通过（EXIT=0，5 项目，仅良性 NU1603 版本解析警告）。
+- 单元测试 126/126 通过（PhotoMind.Tests 96/96 + PhotoMind.App.Tests 30/30）。
+- CLIP CPU 冒烟 18/18（模型加载、图像/文本编码 512 维、L2 归一化、分层匹配、文本缓存、GPU 回退降级）。
+- 真实验证集（Wikimedia Commons 14 张照片，5 大类）：**top-1 准确率 10/14 = 71.4%**；0.8 阈值下路由 CLIP 0/14（DeepSeek 减少比例 0.0%）、0.8 阈值误采信 0/0。详见交付报告。
+
 ## [0.8.0] — 增量改进：API 状态显示 + 密钥健壮性 + 扫描列表移除
 
 **新增功能**

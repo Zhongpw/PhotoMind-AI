@@ -80,6 +80,9 @@ public sealed class SecretStoreTests
         public string TempDirectory => _secretsFile;
         public string ConfigFilePath => _secretsFile;
         public string SecretsFilePath => _secretsFile;
+        public string ModelsDirectory => _secretsFile;
+        public string ClipModelDirectory => _secretsFile;
+        public string ClipTextCacheFilePath => _secretsFile;
 
         public void EnsureCreated() { }
     }

@@ -15,6 +15,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly ISecretStore _secretStore;
     private readonly IAiConfigStore _configStore;
     private readonly IDeepSeekClient _client;
+    private readonly IClipModelService _clipModel;
 
     [ObservableProperty] private string _baseUrl = AiConstants.DefaultBaseUrl;
     [ObservableProperty] private string _model = AiConstants.DefaultModel;
@@ -24,6 +25,11 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private bool _allowUpload;
     [ObservableProperty] private int _maxPreviewDimension = AiConstants.DefaultMaxPreviewDimension;
     [ObservableProperty] private int _previewQuality = AiConstants.DefaultPreviewQuality;
+    [ObservableProperty] private bool _saveTokenMode;
+    [ObservableProperty] private bool _gpuAcceleration;
+
+    [ObservableProperty] private string _clipDeviceText = "CLIP 模型未加载（首次分类时自动加载）";
+    [ObservableProperty] private bool _isCheckingGpu;
 
     [ObservableProperty] private string _apiKeyInput = string.Empty;
     [ObservableProperty] private bool _showApiKey;
@@ -47,11 +53,12 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public IReadOnlyList<int> PreviewQualityOptions { get; } = new[] { 60, 70, 75, 80, 85, 90, 95 };
 
-    public SettingsViewModel(ISecretStore secretStore, IAiConfigStore configStore, IDeepSeekClient client)
+    public SettingsViewModel(ISecretStore secretStore, IAiConfigStore configStore, IDeepSeekClient client, IClipModelService clipModel)
     {
         _secretStore = secretStore;
         _configStore = configStore;
         _client = client;
+        _clipModel = clipModel;
         _ = InitializeAsync();
     }
 
@@ -68,6 +75,9 @@ public sealed partial class SettingsViewModel : ObservableObject
             AllowUpload = config.AllowUpload;
             MaxPreviewDimension = config.MaxPreviewDimension;
             PreviewQuality = config.PreviewQuality;
+            SaveTokenMode = config.SaveTokenMode;
+            GpuAcceleration = config.GpuAcceleration;
+            RefreshClipStatus();
         }
         catch (Exception ex)
         {
@@ -90,24 +100,70 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            var config = new AiConfig
-            {
-                BaseUrl = BaseUrl.Trim(),
-                Model = Model.Trim(),
-                Detail = Detail,
-                Concurrency = Concurrency,
-                MaxRetries = MaxRetries,
-                AllowUpload = AllowUpload,
-                MaxPreviewDimension = MaxPreviewDimension,
-                PreviewQuality = PreviewQuality,
-            };
-            await _configStore.SaveAsync(config).ConfigureAwait(true);
+            await _configStore.SaveAsync(BuildConfig()).ConfigureAwait(true);
             StatusText = "配置已保存";
         }
         catch (Exception ex)
         {
             StatusText = "保存失败：" + ex.Message;
         }
+    }
+
+    /// <summary>Builds an <see cref="AiConfig"/> snapshot from the current form values.</summary>
+    private AiConfig BuildConfig()
+    {
+        return new AiConfig
+        {
+            BaseUrl = BaseUrl.Trim(),
+            Model = Model.Trim(),
+            Detail = Detail,
+            Concurrency = Concurrency,
+            MaxRetries = MaxRetries,
+            AllowUpload = AllowUpload,
+            MaxPreviewDimension = MaxPreviewDimension,
+            PreviewQuality = PreviewQuality,
+            SaveTokenMode = SaveTokenMode,
+            GpuAcceleration = GpuAcceleration,
+        };
+    }
+
+    /// <summary>Reports the CLIP model's current device/state so the user sees the honest result.</summary>
+    private void RefreshClipStatus()
+    {
+        ClipDeviceText = _clipModel.State switch
+        {
+            ClipModelState.Ready => _clipModel.Degraded
+                ? $"{_clipModel.DeviceDescription}（{_clipModel.DegradeReason}）"
+                : _clipModel.DeviceDescription,
+            ClipModelState.Failed => "模型加载失败：" + (_clipModel.LastError ?? "未知错误"),
+            _ => "CLIP 模型未加载（首次分类时自动加载）",
+        };
+    }
+
+    [RelayCommand]
+    private async Task CheckGpuAsync()
+    {
+        if (IsCheckingGpu)
+            return;
+
+        IsCheckingGpu = true;
+        ClipDeviceText = "正在加载 CLIP 模型并检测设备…";
+        try
+        {
+            // Persist the current toggles so device detection uses the latest settings.
+            await _configStore.SaveAsync(BuildConfig()).ConfigureAwait(true);
+            await _clipModel.EnsureLoadedAsync().ConfigureAwait(true);
+            StatusText = "配置已保存";
+        }
+        catch (Exception ex)
+        {
+            ClipDeviceText = "模型加载失败：" + ex.Message;
+            IsCheckingGpu = false;
+            return;
+        }
+
+        IsCheckingGpu = false;
+        RefreshClipStatus();
     }
 
     [RelayCommand]

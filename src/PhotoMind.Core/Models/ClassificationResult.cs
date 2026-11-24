@@ -1,3 +1,5 @@
+using PhotoMind.Core.Enums;
+
 namespace PhotoMind.Core.Models;
 
 /// <summary>The AI's classification output for a single image.</summary>
@@ -23,6 +25,9 @@ public sealed class ClassificationResult
 
     public string ModelName { get; set; } = string.Empty;
     public string PromptVersion { get; set; } = string.Empty;
+
+    /// <summary>Which engine produced this result (DeepSeek API or local CLIP).</summary>
+    public ClassificationSource Source { get; set; } = ClassificationSource.DeepSeek;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

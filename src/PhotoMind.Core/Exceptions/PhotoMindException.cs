@@ -41,4 +41,5 @@ public sealed class PathValidationException : PhotoMindException
 public sealed class PhotoMindConfigurationException : PhotoMindException
 {
     public PhotoMindConfigurationException(string message) : base(message) { }
+    public PhotoMindConfigurationException(string message, Exception inner) : base(message, inner) { }
 }

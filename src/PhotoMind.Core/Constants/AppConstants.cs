@@ -20,4 +20,13 @@ public static class AppConstants
 
     /// <summary>DPAPI-protected secret blob (API key).</summary>
     public const string SecretsFileName = "secrets.dat";
+
+    /// <summary>Directory holding local model files (CLIP ONNX + tokenizer).</summary>
+    public const string ModelsDirectoryName = "models";
+
+    /// <summary>Sub-directory under models holding the CLIP ViT-B/32 files.</summary>
+    public const string ClipModelDirectoryName = "clip";
+
+    /// <summary>JSON file caching CLIP text embeddings (invalidated when the category tree changes).</summary>
+    public const string ClipTextCacheFileName = "clip-text-cache.json";
 }

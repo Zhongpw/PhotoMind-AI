@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddSingleton<AIRequestManager>();
         services.AddSingleton<IClassificationRepository, ClassificationRepository>();
         services.AddSingleton<IClassificationService, ClassificationService>();
+        services.AddSingleton<IClipModelService, ClipModelService>();
 
         // Organize (file arrangement) services.
         services.AddSingleton<SafeFileOperations>();

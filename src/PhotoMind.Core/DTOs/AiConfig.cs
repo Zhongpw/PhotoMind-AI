@@ -30,6 +30,18 @@ public sealed class AiConfig
     /// <summary>JPEG quality (1..100) for the generated AI preview.</summary>
     public int PreviewQuality { get; set; } = AiConstants.DefaultPreviewQuality;
 
+    /// <summary>Token-saving mode: route high-confidence images through local CLIP before DeepSeek.</summary>
+    public bool SaveTokenMode { get; set; }
+
+    /// <summary>NVIDIA GPU acceleration for local CLIP inference (falls back to CPU when unavailable).</summary>
+    public bool GpuAcceleration { get; set; }
+
+    /// <summary>Temperature used for CLIP softmax normalization (lower = sharper distribution).</summary>
+    public double ClipTemperature { get; set; } = AiConstants.DefaultClipTemperature;
+
+    /// <summary>CLIP softmax confidence above which a result is accepted without a DeepSeek request.</summary>
+    public double ClipConfidenceThreshold { get; set; } = AiConstants.DefaultClipConfidenceThreshold;
+
     /// <summary>Normalizes user input so invalid values never reach the request layer.</summary>
     public AiConfig Sanitized()
     {
@@ -37,6 +49,8 @@ public sealed class AiConfig
         MaxRetries = Math.Clamp(MaxRetries, 0, 10);
         MaxPreviewDimension = Math.Clamp(MaxPreviewDimension, 128, 4096);
         PreviewQuality = Math.Clamp(PreviewQuality, 10, 100);
+        ClipTemperature = Math.Clamp(ClipTemperature, 0.01, 1.0);
+        ClipConfidenceThreshold = Math.Clamp(ClipConfidenceThreshold, 0.0, 1.0);
         if (string.IsNullOrWhiteSpace(BaseUrl))
             BaseUrl = AiConstants.DefaultBaseUrl;
         if (string.IsNullOrWhiteSpace(Model))

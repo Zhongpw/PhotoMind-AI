@@ -108,6 +108,9 @@ public class ScanViewModelTests
         public string TempDirectory => "C:\\fake\\data\\temp";
         public string ConfigFilePath => "C:\\fake\\data\\ai-config.json";
         public string SecretsFilePath => "C:\\fake\\data\\secrets.dat";
+        public string ModelsDirectory => "C:\\fake\\data\\models";
+        public string ClipModelDirectory => "C:\\fake\\data\\models\\clip";
+        public string ClipTextCacheFilePath => "C:\\fake\\data\\clip-text-cache.json";
         public void EnsureCreated() { }
     }
 }

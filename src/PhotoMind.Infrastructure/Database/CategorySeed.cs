@@ -6,14 +6,47 @@ namespace PhotoMind.Infrastructure.Database;
 /// <summary>Seeds the built-in category tree on first run (only when the Categories table is empty).</summary>
 public static class CategorySeed
 {
-    private static readonly (string Name, string Description, string[] Subs)[] TopLevel =
+    private sealed record SeedCategory(string Name, string Alias, string Description, (string Name, string Alias)[] Subs);
+
+    // English aliases feed the CLIP text encoder, which understands English far better than Chinese.
+    private static readonly SeedCategory[] TopLevel =
     {
-        ("自然", "自然风光与户外景色", new[] { "海洋", "山川", "花草", "森林", "天空" }),
-        ("生活", "日常生活记录", new[] { "日常", "聚会", "家庭", "旅行" }),
-        ("动物", "动物与宠物", new[] { "猫", "狗", "鸟", "其他动物" }),
-        ("建筑", "建筑与室内", new[] { "城市", "室内", "地标" }),
-        ("美食", "食物与饮品", new[] { "中餐", "西餐", "甜点", "饮品" }),
-        ("其他", "无法归入以上分类的内容", Array.Empty<string>()),
+        new("自然", "nature", "自然风光与户外景色", new[]
+        {
+            ("海洋", "the ocean"),
+            ("山川", "mountains"),
+            ("花草", "flowers"),
+            ("森林", "forest"),
+            ("天空", "the sky"),
+        }),
+        new("生活", "everyday life", "日常生活记录", new[]
+        {
+            ("日常", "daily routine"),
+            ("聚会", "a party"),
+            ("家庭", "family"),
+            ("旅行", "travel"),
+        }),
+        new("动物", "animals", "动物与宠物", new[]
+        {
+            ("猫", "a cat"),
+            ("狗", "a dog"),
+            ("鸟", "a bird"),
+            ("其他动物", "other animals"),
+        }),
+        new("建筑", "architecture", "建筑与室内", new[]
+        {
+            ("城市", "a city"),
+            ("室内", "an indoor room"),
+            ("地标", "a landmark"),
+        }),
+        new("美食", "food", "食物与饮品", new[]
+        {
+            ("中餐", "Chinese food"),
+            ("西餐", "Western food"),
+            ("甜点", "dessert"),
+            ("饮品", "drinks"),
+        }),
+        new("其他", "miscellaneous", "无法归入以上分类的内容", Array.Empty<(string Name, string Alias)>()),
     };
 
     public static async Task SeedAsync(AppDbContext db, CancellationToken ct = default)
@@ -28,6 +61,7 @@ public static class CategorySeed
             parents.Add(new Category
             {
                 Name = TopLevel[i].Name,
+                Alias = TopLevel[i].Alias,
                 Description = TopLevel[i].Description,
                 IsSystem = true,
                 SortOrder = i,
@@ -46,7 +80,8 @@ public static class CategorySeed
             {
                 children.Add(new Category
                 {
-                    Name = subs[j],
+                    Name = subs[j].Name,
+                    Alias = subs[j].Alias,
                     ParentId = parents[i].Id,
                     IsSystem = true,
                     SortOrder = j,

@@ -14,14 +14,17 @@ public class SettingsViewModelTests
     private readonly Mock<ISecretStore> _secretStore = new();
     private readonly Mock<IAiConfigStore> _configStore = new();
     private readonly Mock<IDeepSeekClient> _client = new();
+    private readonly Mock<IClipModelService> _clipModel = new();
 
-    private SettingsViewModel CreateVm()
+    private SettingsViewModel CreateVm(AiConfig? config = null)
     {
         _secretStore.Setup(s => s.HasSecretAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         _configStore.Setup(c => c.LoadAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AiConfig());
-        return new SettingsViewModel(_secretStore.Object, _configStore.Object, _client.Object);
+            .ReturnsAsync(config ?? new AiConfig());
+        _clipModel.Setup(c => c.State).Returns(ClipModelState.NotLoaded);
+        _clipModel.Setup(c => c.DeviceDescription).Returns("CPU");
+        return new SettingsViewModel(_secretStore.Object, _configStore.Object, _client.Object, _clipModel.Object);
     }
 
     [Fact]
@@ -73,6 +76,8 @@ public class SettingsViewModelTests
         vm.AllowUpload = true;
         vm.MaxPreviewDimension = 1536;
         vm.PreviewQuality = 90;
+        vm.SaveTokenMode = true;
+        vm.GpuAcceleration = true;
 
         await vm.SaveConfigCommand.ExecuteAsync(null);
 
@@ -85,8 +90,34 @@ public class SettingsViewModelTests
                 cfg.MaxRetries == 5 &&
                 cfg.AllowUpload &&
                 cfg.MaxPreviewDimension == 1536 &&
-                cfg.PreviewQuality == 90),
+                cfg.PreviewQuality == 90 &&
+                cfg.SaveTokenMode &&
+                cfg.GpuAcceleration),
             It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Initialize_LoadsClipTogglesFromConfig()
+    {
+        var vm = CreateVm(new AiConfig { SaveTokenMode = true, GpuAcceleration = true });
+        await Task.Delay(50); // let the fire-and-forget InitializeAsync complete
+
+        Assert.True(vm.SaveTokenMode);
+        Assert.True(vm.GpuAcceleration);
+    }
+
+    [Fact]
+    public async Task CheckGpu_LoadsModelAndReportsDevice()
+    {
+        var vm = CreateVm();
+        _clipModel.Setup(c => c.State).Returns(ClipModelState.Ready);
+        _clipModel.Setup(c => c.DeviceDescription).Returns("CPU");
+        _clipModel.Setup(c => c.Degraded).Returns(false);
+
+        await vm.CheckGpuCommand.ExecuteAsync(null);
+
+        _clipModel.Verify(c => c.EnsureLoadedAsync(It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal("CPU", vm.ClipDeviceText);
     }
 
     [Fact]

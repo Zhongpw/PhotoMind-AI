@@ -69,6 +69,9 @@ namespace PhotoMind.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Alias")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -138,6 +141,9 @@ namespace PhotoMind.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(4096)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("INTEGER");
 
                     b.Property<long?>("SubCategoryId")
                         .HasColumnType("INTEGER");

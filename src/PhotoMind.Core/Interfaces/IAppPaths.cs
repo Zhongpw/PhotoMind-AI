@@ -11,6 +11,15 @@ public interface IAppPaths
     string ConfigFilePath { get; }
     string SecretsFilePath { get; }
 
+    /// <summary>Root directory for local model files (CLIP ONNX, tokenizer).</summary>
+    string ModelsDirectory { get; }
+
+    /// <summary>Directory holding the CLIP ViT-B/32 ONNX + tokenizer files.</summary>
+    string ClipModelDirectory { get; }
+
+    /// <summary>Path of the CLIP text-embedding cache file.</summary>
+    string ClipTextCacheFilePath { get; }
+
     /// <summary>Creates the data, thumbnail, log and temp directories if they do not yet exist.</summary>
     void EnsureCreated();
 }

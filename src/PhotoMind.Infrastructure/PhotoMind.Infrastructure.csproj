@@ -17,6 +17,9 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="13.10.0" />
+    <!-- GPU build: single onnxruntime.dll with CUDA + CPU execution providers. Enables the GPU
+         acceleration toggle (falls back to CPU when no NVIDIA GPU/CUDA runtime is present). -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.Gpu.Windows" Version="1.32.0" />
     <PackageReference Include="Serilog" Version="4.4.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />

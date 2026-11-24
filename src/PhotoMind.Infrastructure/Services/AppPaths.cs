@@ -39,11 +39,18 @@ public sealed class AppPaths : IAppPaths
 
     public string SecretsFilePath => Path.Combine(_dataDirectory, AppConstants.SecretsFileName);
 
+    public string ModelsDirectory => Path.Combine(_dataDirectory, AppConstants.ModelsDirectoryName);
+
+    public string ClipModelDirectory => Path.Combine(ModelsDirectory, AppConstants.ClipModelDirectoryName);
+
+    public string ClipTextCacheFilePath => Path.Combine(_dataDirectory, AppConstants.ClipTextCacheFileName);
+
     public void EnsureCreated()
     {
         Directory.CreateDirectory(_dataDirectory);
         Directory.CreateDirectory(ThumbnailDirectory);
         Directory.CreateDirectory(LogDirectory);
         Directory.CreateDirectory(TempDirectory);
+        Directory.CreateDirectory(ClipModelDirectory);
     }
 }

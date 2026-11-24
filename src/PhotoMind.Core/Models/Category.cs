@@ -7,6 +7,9 @@ public sealed class Category
 
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>Optional English alias used as the CLIP text prompt (CLIP understands English far better than Chinese).</summary>
+    public string? Alias { get; set; }
+
     /// <summary>Parent category id; null for a top-level category.</summary>
     public long? ParentId { get; set; }
 
