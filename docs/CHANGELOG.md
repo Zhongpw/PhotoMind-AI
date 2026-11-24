@@ -2,6 +2,20 @@
 
 本文件记录 PhotoMind AI 各开发阶段的变更。
 
+## [0.8.0] — 增量改进：API 状态显示 + 密钥健壮性 + 扫描列表移除
+
+**新增功能**
+
+- 扫描列表移除（右键「从任务列表移除」，支持单张/多选批量）：复用 `ImageScanStatus.Skipped` 作为"从当前任务队列移除"标记（不新增表/列/迁移，零重构）。`MarkImagesSkippedAsync` 只把状态从 Scanned→Skipped，绝不删除全局 Image 记录、分类结果、缓存或原始文件；`GetImagesByTaskAsync` 过滤 Skipped 使移除后 UI 立即刷新；分类/整理/重复检测三处均已按 Scanned 过滤，故移除项自动被排除。右键菜单 + 扩展多选 + MessageBox 确认 + 立即刷新。
+- API 状态显示（主界面右上角）：区分未配置/已配置/已连接/连接失败/密钥异常五态，`ApiStatusDetector` + `ApiStatusChangedMessage` 广播（保存/删除/测试后实时刷新）。
+- 密钥存储健壮性：`SecretStore.GetSecretAsync` 对非法 base64 返回 null（视为"无法解密"），不再抛未处理异常（避免密钥异常被误判为"未配置"）。
+
+**验证**
+
+- 全量离线编译通过（EXIT=0，5 项目，仅良性 NU1603 版本解析警告）。
+- 单元测试 120/120 通过（PhotoMind.Tests 92/92 + PhotoMind.App.Tests 28/28）。
+- 移除功能冒烟验证通过（12/12：单移、批移、任务队列刷新、原图保留、分类结果不变、重扫仍找到、未分类队列排除、任务状态不变、跨任务无影响）。
+
 ## [0.7.0] — Phase 7：增强（单测 / 迁移 / 扩展格式 / 正式安装包）
 
 **新增功能**

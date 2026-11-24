@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
@@ -258,5 +259,52 @@ public sealed partial class ScanViewModel : ObservableObject
         Images = new ObservableCollection<ImageItemViewModel>(items);
         OnPropertyChanged(nameof(Images));
         StatusText = $"已加载 {items.Count:N0} 张图片";
+    }
+
+    /// <summary>
+    /// UI entry point (context menu): confirms with the user, then removes the selected images from the
+    /// current task queue. Only the queue membership is affected — global records, caches and originals are untouched.
+    /// </summary>
+    public async Task RemoveFromTaskAsync(IReadOnlyList<ImageItemViewModel> items)
+    {
+        if (items.Count == 0)
+            return;
+
+        var count = items.Count;
+        var confirm = MessageBox.Show(
+            $"确定要从任务列表移除 {count} 张图片吗？\n\n原始图片、全局图片记录和已有分类结果都不会被删除或修改。",
+            "从任务列表移除",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question,
+            MessageBoxResult.No);
+
+        if (confirm != MessageBoxResult.Yes)
+            return;
+
+        var removed = await RemoveFromTaskCoreAsync(items.Select(i => i.Id).ToList()).ConfigureAwait(true);
+        StatusText = removed > 0
+            ? $"已从任务列表移除 {removed:N0} 张图片（不影响原图与全局记录）"
+            : "移除未生效：这些图片可能已不在任务队列中";
+    }
+
+    /// <summary>Testable core: persists the skipped state and refreshes the in-memory list immediately.</summary>
+    public async Task<int> RemoveFromTaskCoreAsync(IReadOnlyList<long> imageIds)
+    {
+        if (imageIds.Count == 0)
+            return 0;
+
+        var removed = await _repository.MarkImagesSkippedAsync(imageIds).ConfigureAwait(true);
+
+        if (removed > 0)
+        {
+            var ids = new HashSet<long>(imageIds);
+            for (int i = Images.Count - 1; i >= 0; i--)
+            {
+                if (ids.Contains(Images[i].Id))
+                    Images.RemoveAt(i);
+            }
+        }
+
+        return removed;
     }
 }

@@ -74,9 +74,28 @@ public sealed class ScanRepository : IScanRepository
     {
         await using var db = await _factory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
         return await db.Images.AsNoTracking()
-            .Where(x => x.ScanTaskId == taskId)
+            .Where(x => x.ScanTaskId == taskId && x.ScanStatus != ImageScanStatus.Skipped)
             .OrderBy(x => x.Id)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<int> MarkImagesSkippedAsync(IReadOnlyList<long> imageIds, CancellationToken cancellationToken = default)
+    {
+        if (imageIds.Count == 0)
+            return 0;
+
+        await using var db = await _factory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var rows = await db.Images
+            .Where(i => imageIds.Contains(i.Id) && i.ScanStatus != ImageScanStatus.Skipped)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        foreach (var row in rows)
+            row.ScanStatus = ImageScanStatus.Skipped;
+
+        if (rows.Count > 0)
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        return rows.Count;
     }
 
     public async Task<IReadOnlyList<ScanTask>> GetRecentScanTasksAsync(int count, CancellationToken cancellationToken = default)

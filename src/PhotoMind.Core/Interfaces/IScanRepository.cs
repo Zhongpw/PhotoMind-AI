@@ -17,6 +17,13 @@ public interface IScanRepository
     Task<IReadOnlyList<Image>> GetImagesAsync(int skip, int take, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Image>> GetImagesByTaskAsync(long taskId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Marks images as removed from the current task queue (<see cref="ImageScanStatus.Skipped"/>).
+    /// Never deletes the global image rows, classification results, caches or original files.
+    /// Returns the number of rows whose status was actually changed.
+    /// </summary>
+    Task<int> MarkImagesSkippedAsync(IReadOnlyList<long> imageIds, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<ScanTask>> GetRecentScanTasksAsync(int count, CancellationToken cancellationToken = default);
 
     /// <summary>Deletes cached thumbnails and scan records for the given image set (never touches originals).</summary>
