@@ -20,4 +20,17 @@
     <ProjectReference Include="..\PhotoMind.Infrastructure\PhotoMind.Infrastructure.csproj" />
   </ItemGroup>
 
+  <!--
+    CLIP ONNX 模型与分词器文件（约 600MB，不进 Git，见 .gitignore 的 .models/）。
+    存在时随 Debug/Release/publish 一起输出到 models/clip/，运行时由
+    ClipModelService.ResolveModelDirectory() 从 AppContext.BaseDirectory/models/clip 加载。
+    模型缺失（如全新 clone 未下载模型）时此 Include 匹配为空，构建不受影响，应用回退 DeepSeek。
+  -->
+  <ItemGroup>
+    <None Include="..\..\.models\clip\*"
+          Link="models\clip\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

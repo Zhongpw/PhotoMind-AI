@@ -2,6 +2,22 @@
 
 本文件记录 PhotoMind AI 各开发阶段的变更。
 
+## [0.12.0] — 修复：CLIP 模型随安装包部署（安装包版本 1.1.0）
+
+**问题**
+
+- 此前 CLIP 模型（`.models/clip/`，约 607 MB，不进 Git）未被打包进发布产物 / 安装包：`PhotoMind.App.csproj` 缺少把模型复制到输出目录的规则，且 `ClipModelService` 只从用户数据目录加载模型，全新安装后报「CLIP 模型文件缺失」。
+
+**修复**
+
+- `src/PhotoMind.App/PhotoMind.App.csproj`：新增 `<None Include="..\..\.models\clip\*">`（`CopyToOutputDirectory` / `CopyToPublishDirectory` = `PreserveNewest`），模型随 Debug/Release/publish 输出到 `models/clip/`，Inno Setup 打包的 publish 目录因此自带模型。
+- `src/PhotoMind.Infrastructure/AI/ClipModelService.cs`：新增 `ResolveModelDirectory()`，优先搜索程序目录 `AppContext.BaseDirectory/models/clip`，回退用户数据目录，错误提示列出两个搜索路径。
+- `installer/PhotoMindAI.iss`：`AppVersion` 1.0.0 → 1.1.0。
+
+**注意**
+
+- 模型文件不进 Git。全新 `git clone` 后必须先 `node .tools/download-clip-model.mjs` 下载模型到 `.models/clip/`，再 `scripts/publish.ps1` + ISCC 打包，安装包才会包含模型。
+
 ## [0.11.0] — 增量任务 05：CLIP 本地粗筛 + DeepSeek 协同分类
 
 **新增功能**

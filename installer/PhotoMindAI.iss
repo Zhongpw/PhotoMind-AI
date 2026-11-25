@@ -6,7 +6,7 @@
 ;   测试构建(无图标/无注册表，用于受限环境安装测试):  ISCC.exe /DTESTBUILD PhotoMindAI.iss
 
 #define AppName "PhotoMind AI"
-#define AppVersion "1.0.0"
+#define AppVersion "1.1.0"
 #define AppPublisher "PhotoMind AI"
 #define AppExeName "PhotoMind.App.exe"
 #define AppSource "..\src\PhotoMind.App\bin\Release\net8.0-windows\win-x64\publish"

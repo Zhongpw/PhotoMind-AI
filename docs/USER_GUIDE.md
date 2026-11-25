@@ -61,3 +61,4 @@
 - **分类失败但扫描正常**：检查设置页 `允许 AI 上传` 是否打开、Key 是否有效。
 - **整理时空间不足**：预览阶段会检查磁盘空间，清理后重试。
 - **原图会变吗**：不会。扫描/分类全程只读，整理默认复制；移动操作前会二次确认。
+- **提示「CLIP 模型文件缺失」**：安装包（v1.1.0+）默认内置模型到 `models/clip/`；若仍报缺失，把模型文件放到程序目录的 `models/clip/`，或放到用户数据目录 `%LOCALAPPDATA%\PhotoMind AI\models\clip\` 即可。模型下载方法见 `README.md`（`node .tools/download-clip-model.mjs`）。

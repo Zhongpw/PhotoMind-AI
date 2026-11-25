@@ -129,6 +129,45 @@ $env:PHOTOMIND_DATA_DIR = "$root\.testdata"   # 可选：指定数据目录，�
 
 ---
 
+## 本地 CLIP 模型（离线图像识别）
+
+PhotoMind AI 内置本地 CLIP（ViT-B/32，ONNX Runtime）图像识别，可在**不调用 DeepSeek、不上传任何图片**的情况下做零样本分类与候选筛选（省 Token 模式）。模型约 607 MB，来自 Hugging Face 的 `Xenova/clip-vit-base-patch32`（MIT 许可，详见 `docs/THIRD_PARTY_NOTICES.md`）。
+
+### 模型文件与安装包部署（v1.1.0 已修复）
+
+- 模型文件（`vision_model.onnx` / `text_model.onnx` / `vocab.json` / `merges.txt` 等，共约 607 MB）**不进 Git**，存放在仓库根目录 `.models/clip/`（已被 `.gitignore` 忽略）。
+- 构建时 `src/PhotoMind.App/PhotoMind.App.csproj` 会把 `.models/clip/*` 复制到输出目录 `models/clip/`（`CopyToOutputDirectory` / `CopyToPublishDirectory` = `PreserveNewest`），因此 **Debug / Release / publish 以及 Inno Setup 安装包都会自带模型**。
+- 运行时 `ClipModelService.ResolveModelDirectory()` 按顺序搜索：① 程序目录 `models/clip/`（安装包内置）；② 用户数据目录 `<数据目录>/models/clip/`（用户自行放置）。两者都没有时会明确列出这两个搜索路径。
+
+> ⚠️ **此前版本（≤1.0.0）的问题**：模型只从用户数据目录加载、安装包未打包模型，全新安装后会报「CLIP 模型文件缺失」。v1.1.0 已通过上面的 csproj 打包规则 + 目录解析逻辑修复。
+
+### 下载模型（构建 / 打包安装程序前必须先执行一次）
+
+```powershell
+# 需 Node.js；下载到 .models/clip/（已配置 hf-mirror.com 镜像）
+node .tools/download-clip-model.mjs
+```
+
+> 全新 `git clone` 的仓库**不含模型文件**，必须先运行上面的下载脚本，再执行 `scripts/publish.ps1` 打包，安装包里才会包含模型。
+
+### 构建安装包（含模型）
+
+```powershell
+# 1. 下载模型（见上）
+node .tools/download-clip-model.mjs
+
+# 2. 发布自包含 win-x64（会把模型复制进 publish 目录）
+.\scripts\publish.ps1
+
+# 3. 用 Inno Setup 生成安装程序（需安装 Inno Setup 6）
+#    输出：installer/output/PhotoMindAI-Setup-1.1.0.exe
+& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\PhotoMindAI.iss
+```
+
+安装后模型位于 `%LOCALAPPDATA%\Programs\PhotoMind AI\models\clip\`。
+
+---
+
 ## DeepSeek API Key 配置（Phase 2 接入后生效）
 
 - API Key 由用户在设置页自行填写，使用 Windows DPAPI / Credential Manager 加密存储，**绝不**硬编码、写入 Git、写入日志或普通配置文件。

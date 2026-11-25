@@ -20,7 +20,7 @@ PhotoMind AI 依赖以下第三方库。本文件记录其版本与许可证，�
 本地 CLIP 识别使用 Hugging Face 上的 **Xenova/clip-vit-base-patch32**（OpenAI `openai/clip-vit-base-patch32` 的 ONNX 转换），模型权重许可证为 **MIT**（OpenAI CLIP）。
 
 - 来源：https://huggingface.co/Xenova/clip-vit-base-patch32 （经 hf-mirror.com 镜像下载）
-- 存放位置：`<数据目录>/models/clip/`（**不进 Git**，随安装/首次运行独立管理）
+- 存放位置（v1.1.0 起）：优先安装包内置 `models/clip/`（随程序目录部署）；用户数据目录 `<数据目录>/models/clip/` 作为回退（**模型文件不进 Git**，构建/打包前需先下载到 `.models/clip/`）
 
 | 文件 | 大小（字节） | SHA-256 |
 |---|---|---|

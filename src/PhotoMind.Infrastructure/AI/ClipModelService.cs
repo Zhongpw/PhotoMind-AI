@@ -66,16 +66,15 @@ public sealed class ClipModelService : IClipModelService
 
             State = ClipModelState.Loading;
 
-            var dir = _paths.ClipModelDirectory;
+            var dir = ResolveModelDirectory();
             var visionPath = Path.Combine(dir, "vision_model.onnx");
             var textPath = Path.Combine(dir, "text_model.onnx");
             var vocabPath = Path.Combine(dir, "vocab.json");
             var mergesPath = Path.Combine(dir, "merges.txt");
 
-            if (!File.Exists(visionPath) || !File.Exists(textPath))
-                throw new PhotoMindConfigurationException("CLIP 模型文件缺失（vision_model.onnx / text_model.onnx）。请先下载模型到模型目录。");
             if (!File.Exists(vocabPath) || !File.Exists(mergesPath))
-                throw new PhotoMindConfigurationException("CLIP 分词器文件缺失（vocab.json / merges.txt）。");
+                throw new PhotoMindConfigurationException(
+                    "CLIP 分词器文件缺失（vocab.json / merges.txt）。已搜索目录：" + Path.GetFullPath(dir));
 
             var config = await _configStore.LoadAsync(ct).ConfigureAwait(false);
 
@@ -137,6 +136,38 @@ public sealed class ClipModelService : IClipModelService
         {
             _loadLock.Release();
         }
+    }
+
+    /// <summary>
+    /// Resolves the directory holding the CLIP model files. The app-bundled location
+    /// (<see cref="AppContext.BaseDirectory"/>/models/clip) is searched first so the model ships with
+    /// Debug/Release/publish/installed layouts without depending on the current working directory;
+    /// the user data directory is the fallback for user-provided models.
+    /// </summary>
+    private string ResolveModelDirectory()
+    {
+        var bundled = Path.Combine(
+            AppContext.BaseDirectory,
+            AppConstants.ModelsDirectoryName,
+            AppConstants.ClipModelDirectoryName);
+
+        var candidates = new[] { bundled, _paths.ClipModelDirectory };
+        foreach (var dir in candidates)
+        {
+            if (File.Exists(Path.Combine(dir, "vision_model.onnx"))
+                && File.Exists(Path.Combine(dir, "text_model.onnx")))
+            {
+                return dir;
+            }
+        }
+
+        var searched = string.Join(
+            Environment.NewLine,
+            candidates.Select(c => "  " + Path.GetFullPath(c)));
+        throw new PhotoMindConfigurationException(
+            "CLIP 模型文件缺失（vision_model.onnx / text_model.onnx）。已搜索以下目录："
+            + Environment.NewLine + searched
+            + Environment.NewLine + "请将 CLIP 模型文件放入上述任一目录。");
     }
 
     public async Task<float[]> EncodeImageAsync(string imagePath, CancellationToken ct = default)
